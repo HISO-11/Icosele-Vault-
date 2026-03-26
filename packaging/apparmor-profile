@@ -1,0 +1,84 @@
+# AppArmor profile for NovaMachine (QEMU GUI manager)
+#
+# Installation:
+#   1. Copy this file to /etc/apparmor.d/novamachine
+#      sudo cp packaging/apparmor-profile /etc/apparmor.d/novamachine
+#
+#   2. Reload AppArmor:
+#      sudo apparmor_parser -r /etc/apparmor.d/novamachine
+#
+#   3. To enforce:
+#      sudo aa-enforce /etc/apparmor.d/novamachine
+#
+#   4. To test in complain mode first (logs violations without blocking):
+#      sudo aa-complain /etc/apparmor.d/novamachine
+
+#include <tunables/global>
+
+profile novamachine /usr/bin/novamachine flags=(complain) {
+  #include <abstractions/base>
+  #include <abstractions/python>
+  #include <abstractions/nameservice>
+  #include <abstractions/X>
+  #include <abstractions/wayland>
+  #include <abstractions/fonts>
+  #include <abstractions/qt5>
+
+  # NovaMachine data directory — read/write VM configs
+  owner @{HOME}/qemu-gui/data/vms/ r,
+  owner @{HOME}/qemu-gui/data/vms/** rw,
+
+  # QEMU binary — read + execute
+  /usr/bin/qemu-system-x86_64 rix,
+  /usr/bin/qemu-system-aarch64 rix,
+  /usr/bin/qemu-system-arm rix,
+  /usr/bin/qemu-img rix,
+
+  # QEMU support files
+  /usr/share/qemu/** r,
+  /usr/share/OVMF/** r,
+  /usr/share/edk2/** r,
+
+  # VM disk images — user may store anywhere under home
+  owner @{HOME}/**.qcow2 rw,
+  owner @{HOME}/**.img rw,
+  owner @{HOME}/**.iso r,
+  owner @{HOME}/**.raw rw,
+
+  # Per-VM runtime directory for QMP sockets and PID files
+  owner /tmp/novamachine/ rw,
+  owner /tmp/novamachine/** rw,
+
+  # XDG runtime dir (fallback socket location)
+  owner /run/user/*/qemu-*.sock rw,
+
+  # Network access (required for NAT/bridged networking)
+  network inet stream,
+  network inet dgram,
+  network inet6 stream,
+  network inet6 dgram,
+  network unix stream,
+  network unix dgram,
+
+  # sysfs for GPU/IOMMU/PCI scanning (read-only)
+  /sys/bus/pci/devices/ r,
+  /sys/bus/pci/devices/** r,
+  /sys/kernel/iommu_groups/ r,
+  /sys/kernel/iommu_groups/** r,
+
+  # PCI ID database
+  /usr/share/hwdata/pci.ids r,
+  /usr/share/misc/pci.ids r,
+
+  # Host interface listing
+  /usr/bin/ip rix,
+  /sbin/ip rix,
+
+  # swtpm for Windows 11 TPM emulation
+  /usr/bin/swtpm rix,
+
+  # Downloads directory for ISO downloads
+  owner @{HOME}/Downloads/** rw,
+
+  # Deny everything else by default (implicit in AppArmor)
+}
