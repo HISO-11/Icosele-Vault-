@@ -10,12 +10,17 @@ import time
 from enum import Enum
 from pathlib import Path
 
+from app.platform_utils import (
+    get_accel_flags, get_kvm_available, get_temp_dir, is_linux,
+)
 from config.vm_config import VMConfig
 
 log = logging.getLogger(__name__)
 
 
 def _io_uring_available() -> bool:
+    if not is_linux():
+        return False
     try:
         parts = __import__("platform").release().split("-")[0].split(".")
         major, minor = int(parts[0]), int(parts[1])
@@ -30,14 +35,11 @@ class ProcessState(Enum):
     RUNNING = "running"
 
 
-VM_RUN_BASE = Path("/tmp/icosele-vault")
+VM_RUN_BASE = Path(get_temp_dir())
 
 def kvm_available() -> bool:
-    """Check if /dev/kvm exists and is accessible by the current user."""
-    try:
-        return os.access("/dev/kvm", os.R_OK | os.W_OK)
-    except OSError:
-        return False
+    """Cross-platform hardware acceleration check."""
+    return get_kvm_available()
 
 
 _SANDBOX_INCOMPATIBLE_DISPLAYS = {"gtk", "sdl"}
@@ -129,7 +131,7 @@ class QemuProcess:
         ]
 
         if use_kvm:
-            args += ["-enable-kvm", "-cpu", "host"]
+            args += get_accel_flags()
             args += ["-rtc", "base=localtime,clock=host"]
 
         display = self.config.display_config.get("display_backend", "gtk")
