@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Icosele Vault
+Comment=The most powerful open source VM manager for Linux
+Exec=icosele-vault
+Icon=icosele-vault
+Type=Application
+Categories=System;Utility;
+Terminal=false
