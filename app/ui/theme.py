@@ -1,4 +1,4 @@
-"""NovaMachine design tokens — dark palette only."""
+"""Icosele Vault design tokens — dark palette only."""
 
 FONT_FAMILY = '"Inter", "SF Pro Display", "Segoe UI", sans-serif'
 
@@ -70,16 +70,18 @@ QLineEdit:focus, QSpinBox:focus {{ border-color: {ACCENT}; }}
 """
 
 TAB_STYLE = f"""
-QTabWidget::pane {{ border: none; background-color: {BG_PANEL}; }}
-QTabBar {{ background: transparent; }}
+QTabWidget {{ border: none; border-top: none; margin-top: 0px; }}
+QTabWidget::pane {{ border: none; border-top: none; margin-top: 0px; background-color: {BG_PANEL}; }}
+QTabBar {{ background: transparent; border: none; border-top: none; margin-top: 0px; }}
 QTabBar::tab {{
     background-color: transparent; color: {TEXT_SECONDARY};
-    border: none; border-bottom: 2px solid transparent;
+    border: none; border-top: none; border-bottom: 2px solid transparent;
     padding: 16px 24px; font-size: 13px; font-weight: 500;
-    font-family: {FONT_FAMILY}; margin: 0 2px;
+    font-family: {FONT_FAMILY}; margin: 0 2px; margin-top: 0px;
 }}
 QTabBar::tab:selected {{
     color: {TEXT_PRIMARY}; font-size: 14px; font-weight: 600;
+    border: none; border-top: none;
     border-bottom: 2px solid {ACCENT};
 }}
 QTabBar::tab:hover:!selected {{ color: {ACCENT_LIGHT}; }}
@@ -145,8 +147,9 @@ def save_btn_style() -> str:
     return f"""
         QPushButton {{
             background-color: {ACCENT}; color: {TEXT_ON_ACCENT};
-            border: none; border-radius: 6px; padding: 8px 20px;
+            border: none; border-radius: 6px; padding: 8px 12px;
             font-size: 12px; font-weight: 600; font-family: {FONT_FAMILY};
+            min-width: 120px; min-height: 36px;
         }}
         QPushButton:hover {{ background-color: {ACCENT_LIGHT}; }}
     """

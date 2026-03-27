@@ -1,0 +1,12 @@
+2026-03-27T13:07:25.953188 VM started: test vm (test-vm)
+2026-03-27T13:08:02.205233 VM started: test vm (test-vm)
+2026-03-27T13:08:04.767710 VM stopped: test vm (test-vm)
+2026-03-27T13:08:06.267349 VM started: test vm (test-vm)
+2026-03-27T13:18:31.910597 VM started: my ubuntu (my-ubuntu)
+2026-03-27T13:19:18.159244 VM started: my ubuntu (my-ubuntu)
+2026-03-27T13:32:05.338646 VM started: ubuntu (ubuntu)
+2026-03-27T13:44:21.645853 VM stopped: ooo (ooo)
+2026-03-27T15:33:06.660167 VM started: ubuntu (ubuntu)
+2026-03-27T15:36:25.347117 Snapshot created: boom for VM ubuntu
+2026-03-27T15:38:23.379893 VM stopped: ooo (ooo)
+2026-03-27T15:49:08.714623 VM started: instant boot (instant-boot)

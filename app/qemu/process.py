@@ -15,13 +15,22 @@ from config.vm_config import VMConfig
 log = logging.getLogger(__name__)
 
 
+def _io_uring_available() -> bool:
+    try:
+        parts = __import__("platform").release().split("-")[0].split(".")
+        major, minor = int(parts[0]), int(parts[1])
+        return major > 5 or (major == 5 and minor >= 1)
+    except (IndexError, ValueError):
+        return False
+
+
 class ProcessState(Enum):
     STOPPED = "stopped"
     STARTING = "starting"
     RUNNING = "running"
 
 
-VM_RUN_BASE = Path("/tmp/novamachine")
+VM_RUN_BASE = Path("/tmp/icosele-vault")
 
 def kvm_available() -> bool:
     """Check if /dev/kvm exists and is accessible by the current user."""
@@ -73,6 +82,9 @@ class QemuProcess:
         self.config = config
         self.state = ProcessState.STOPPED
         self._proc: subprocess.Popen | None = None
+        self._last_exit_code: int | None = None
+        self._kvm_enabled: bool = False
+        self.encryption_password: str | None = None
 
     @property
     def _vm_run_dir(self) -> Path:
@@ -101,20 +113,24 @@ class QemuProcess:
 
     def build_args(self) -> list[str]:
         use_kvm = kvm_available()
+        self._kvm_enabled = use_kvm
         if not use_kvm:
             log.warning("KVM not available (/dev/kvm missing or not accessible) — VM will run slowly")
+
+        cores = self.config.cpu_cores
 
         args = [
             self.config.qemu_binary,
             "-name", self.config.name,
             "-m", str(self.config.ram_mb),
-            "-smp", str(self.config.cpu_cores),
+            "-smp", f"{cores},sockets=1,cores={cores},threads=1",
             "-qmp", f"unix:{self.socket_path},server,nowait",
             "-pidfile", self.pid_path,
         ]
 
         if use_kvm:
-            args += ["-enable-kvm"]
+            args += ["-enable-kvm", "-cpu", "host"]
+            args += ["-rtc", "base=localtime,clock=host"]
 
         display = self.config.display_config.get("display_backend", "gtk")
         if _can_use_sandbox(self.config.qemu_binary, display):
@@ -125,25 +141,108 @@ class QemuProcess:
         log.debug("disk_path raw value: %r", disk)
         log.debug("iso_path raw value: %r", iso)
 
+        # Check if disk has an installed OS (>1GB means likely installed)
+        disk_size = 0
         if disk:
-            fmt = "raw" if disk.lower().endswith(".raw") else "qcow2"
-            args += ["-drive", f"file={disk},format={fmt},if=virtio"]
+            try:
+                disk_size = os.path.getsize(disk)
+            except OSError:
+                pass
 
-        if iso:
+        if disk:
+            if self.config.encrypted and self.encryption_password:
+                args += ["-object",
+                         f"secret,id=sec0,data={self.encryption_password},format=raw"]
+                args += ["-drive", f"file={disk},format=luks,key-secret=sec0,if=virtio"]
+            else:
+                fmt = "raw" if disk.lower().endswith(".raw") else "qcow2"
+                use_io_uring = _io_uring_available()
+                if fmt == "qcow2":
+                    if use_io_uring:
+                        args += ["-drive", f"file={disk},format=qcow2,if=virtio,aio=io_uring,cache=writeback,discard=unmap"]
+                    else:
+                        args += ["-drive", f"file={disk},format=qcow2,if=virtio,cache=writeback"]
+                else:
+                    aio = "io_uring" if use_io_uring else "threads"
+                    args += ["-drive", f"file={disk},format={fmt},if=virtio,aio={aio}"]
+
+        os_installed = disk_size > 1073741824  # 1GB
+
+        # Only add ISO cdrom if OS is not yet installed
+        if iso and not os_installed:
             args += ["-drive", f"file={iso},media=cdrom,format=raw,readonly=on"]
-            args += ["-boot", "order=d"]
+            args += ["-boot", "order=d,menu=off,splash-time=0"]
+        else:
+            # Boot from disk — fastest path
+            args += ["-boot", "order=c,menu=off,splash-time=0"]
 
         args += self.config.net_args()
-        args += self.config.display_args()
+
+        # Stable display: no GL, no virtio-gpu-gl
+        args += ["-display", "gtk"]
+        args += ["-device", "virtio-vga"]
+
         args += self.config.usb_args()
         args += self.config.gpu_args()
 
-        # Inject accel=kvm into any -machine arg from extra_args
+        if self.config.hugepages_enabled and Path("/dev/hugepages").exists():
+            args += ["-mem-path", "/dev/hugepages"]
+
+        # Audio — only add if pipewire is running (avoids boot delay from bad backend)
+        if self.config.audio_enabled:
+            try:
+                pw = subprocess.check_output(["ps", "aux"], text=True, timeout=3)
+                if "pipewire" in pw.lower():
+                    args += ["-audiodev", "pipewire,id=audio0",
+                             "-device", "ich9-intel-hda",
+                             "-device", "hda-duplex,audiodev=audio0"]
+                else:
+                    args += ["-audiodev", "pa,id=audio0",
+                             "-device", "ich9-intel-hda",
+                             "-device", "hda-duplex,audiodev=audio0"]
+            except (subprocess.SubprocessError, FileNotFoundError):
+                pass  # skip audio entirely if we can't detect backend
+
+        # Clipboard sync via guest agent
+        if self.config.clipboard_sync:
+            qga_sock = str(self._vm_run_dir / "qga.sock")
+            args += ["-chardev", f"socket,path={qga_sock},server=on,wait=off,id=qga0",
+                     "-device", "virtio-serial",
+                     "-device", "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0"]
+
+        # Shared folders (virtio-fs chardev/device args)
+        for i, folder in enumerate(self.config.shared_folders):
+            sock = str(self._vm_run_dir / f"virtiofs{i}.sock")
+            tag = folder.get("mount_tag", f"share{i}")
+            args += ["-chardev", f"socket,id=char{i},path={sock}",
+                     "-device", f"vhost-user-fs-pci,queue-size=1024,chardev=char{i},tag={tag}"]
+        if self.config.shared_folders:
+            args += ["-object", f"memory-backend-file,id=mem,size={self.config.ram_mb}M,mem-path=/dev/hugepages,share=on",
+                     "-numa", "node,memdev=mem"]
+
+        # SPICE display mode
+        spice_cfg = self.config.spice_config
+        if spice_cfg.get("spice_mode") == "spice":
+            port = spice_cfg.get("spice_port", 5930)
+            args += ["-vga", "qxl",
+                     "-device", "virtio-serial",
+                     "-chardev", "spicevmc,id=vdagent,debug=0,name=vdagent",
+                     "-device", "virtserialport,chardev=vdagent,name=com.redhat.spice.0",
+                     "-spice", f"port={port},disable-ticketing=on"]
+
+        # Ensure -machine flag with correct accel
         extra = list(self.config.extra_args)
-        if use_kvm:
-            for i, a in enumerate(extra):
-                if i > 0 and extra[i - 1] == "-machine" and "accel=" not in a:
-                    extra[i] = a + ",accel=kvm"
+        has_machine = any(a == "-machine" for a in extra)
+        if has_machine:
+            if use_kvm:
+                for i, a in enumerate(extra):
+                    if i > 0 and extra[i - 1] == "-machine" and "accel=" not in a:
+                        extra[i] = a + ",accel=kvm"
+        else:
+            if use_kvm:
+                extra = ["-machine", "type=q35,accel=kvm"] + extra
+            else:
+                extra = ["-machine", "type=q35"] + extra
         args += extra
         return args
 
@@ -235,8 +334,15 @@ class QemuProcess:
             return False
         return self._proc.poll() is None
 
+    @property
+    def exit_code(self) -> int | None:
+        if self._proc is not None:
+            return self._proc.poll()
+        return self._last_exit_code
+
     def refresh_state(self) -> ProcessState:
         if self._proc is not None and not self.is_alive():
+            self._last_exit_code = self._proc.poll()
             self._proc = None
             self.state = ProcessState.STOPPED
             self._cleanup_run_dir()

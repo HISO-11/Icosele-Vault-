@@ -60,6 +60,13 @@ TEMPLATES = {
             "-global", "driver=cfi.pflash01,property=secure,value=on",
         ],
     },
+    "sandbox": {
+        "label": "Malware Sandbox",
+        "desc": "Isolated, no network, auto-snapshot, 4 GB RAM",
+        "cpu": 2, "ram": 4096, "disk": "40G",
+        "sandbox": True,
+        "extra_args": ["-machine", "q35"],
+    },
 }
 
 ISO_SOURCES = [
@@ -265,7 +272,7 @@ class VMCreateDialog(QDialog):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("NovaMachine - New Machine")
+        self.setWindowTitle("Icosele Vault - New Machine")
         self.setFixedSize(580, 720)
         self.setStyleSheet(f"background-color: {BG_PANEL}; color: {TEXT_PRIMARY};")
 
@@ -315,6 +322,12 @@ class VMCreateDialog(QDialog):
         layout.addStretch()
 
         btn_row = QHBoxLayout()
+        git_btn = QPushButton("Import from Git Repo")
+        git_btn.setStyleSheet(subtle_btn_style())
+        git_btn.setFixedHeight(34)
+        git_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        git_btn.clicked.connect(self._on_import_git_repo)
+        btn_row.addWidget(git_btn)
         btn_row.addStretch()
         skip_btn = QPushButton("Skip")
         skip_btn.setStyleSheet(secondary_btn_style())
@@ -403,7 +416,7 @@ class VMCreateDialog(QDialog):
         self.disk_browse.setFixedWidth(80)
         self.disk_browse.setStyleSheet(subtle_btn_style())
         self.disk_browse.clicked.connect(self._browse_disk)
-        self.disk_create_btn = QPushButton("Create New")
+        self.disk_create_btn = QPushButton("Create")
         self.disk_create_btn.setFixedWidth(80)
         self.disk_create_btn.setStyleSheet(subtle_btn_style())
         self.disk_create_btn.clicked.connect(self._create_disk_image)
@@ -519,6 +532,29 @@ class VMCreateDialog(QDialog):
         layout.addLayout(btn_row)
 
         self.net_combo.currentIndexChanged.connect(self._on_net_mode_changed)
+
+    def _on_import_git_repo(self) -> None:
+        repo_dir = QFileDialog.getExistingDirectory(
+            self, "Select Git Repository", str(Path.home()))
+        if not repo_dir:
+            return
+        from app.ui.dev_import_dialog import scan_repo, parse_devcontainer, DevImportDialog
+        scan = scan_repo(repo_dir)
+        if not scan:
+            return
+        devc = parse_devcontainer(repo_dir)
+        dlg = DevImportDialog(scan, devc, self)
+        if dlg.exec() and dlg.accepted_config:
+            cfg = dlg.accepted_config
+            self.name_input.setText(cfg["name"])
+            self.ram_input.setValue(cfg["ram_mb"])
+            self.cpu_input.setValue(cfg["cpu_cores"])
+            # Store extras on the dialog for _on_create to pick up
+            self._git_repo_path = cfg.get("repo_path", "")
+            self._git_shared_folders = cfg.get("shared_folders", [])
+            self._git_devcontainer = cfg.get("devcontainer_config", {})
+            self._git_port_forwards = cfg.get("port_forwards", [])
+            self._stack.setCurrentIndex(1)
 
     def _on_net_mode_changed(self) -> None:
         ib = self.net_combo.currentData() == NET_MODE_BRIDGE
@@ -640,4 +676,19 @@ class VMCreateDialog(QDialog):
             name=name, ram_mb=self.ram_input.value(), cpu_cores=self.cpu_input.value(),
             disk_path=disk, iso_path=iso, qemu_binary=qemu_bin, extra_args=extra_args,
             net_mode=net_mode, net_bridge_iface=bridge_iface)
+        # Apply git repo import data if present
+        if hasattr(self, "_git_repo_path") and self._git_repo_path:
+            self.result_config.repo_path = self._git_repo_path
+        if hasattr(self, "_git_shared_folders") and self._git_shared_folders:
+            self.result_config.shared_folders = self._git_shared_folders
+        if hasattr(self, "_git_devcontainer") and self._git_devcontainer:
+            self.result_config.devcontainer_config = self._git_devcontainer
+        if hasattr(self, "_git_port_forwards") and self._git_port_forwards:
+            self.result_config.port_forwards = self._git_port_forwards
+        # Sandbox template: isolate network, disable sharing
+        if tpl.get("sandbox"):
+            self.result_config.sandbox_mode = True
+            self.result_config.net_mode = "hostonly"
+            self.result_config.clipboard_sync = False
+            self.result_config.shared_folders = []
         self.accept()

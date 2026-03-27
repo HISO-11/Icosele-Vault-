@@ -9,12 +9,48 @@ from PySide6.QtWidgets import (
     QTabWidget, QVBoxLayout, QWidget,
 )
 
+from app.ui.ai_assistant_panel import AIAssistantPanel
+from app.ui.ai_snapshot_pruner import SnapshotPrunerPanel
+from app.ui.archaeology_panel import ArchaeologyPanel
+from app.ui.apparmor_panel import AppArmorPanel
+from app.ui.audio_panel import AudioPanel
+from app.ui.audit_panel import AuditPanel
+from app.ui.balloon_panel import BalloonPanel
+from app.ui.clipboard_panel import ClipboardPanel
+from app.ui.cloud_panel import CloudPanel
 from app.ui.console_panel import ConsolePanel
+from app.ui.disk_perf_panel import DiskPerfPanel
 from app.ui.display_panel import DisplayPanel
+from app.ui.dns_filter_panel import DNSFilterPanel
+from app.ui.dns_panel import DNSPanel
+from app.ui.ecosystem_panel import GitHubActionsPanel, TerraformPanel
+from app.ui.encryption_panel import EncryptionPanel
+from app.ui.enterprise_panel import EnterprisePanel
+from app.ui.fake_internet_panel import FakeInternetPanel
+from app.ui.firewall_panel import FirewallPanel
 from app.ui.gpu_panel import GPUPanel
+from app.ui.iommu_panel import IOMMUPanel
+from app.ui.webcam_panel import WebcamPanel
+from app.ui.hugepages_panel import HugepagesPanel
+from app.ui.instant_boot_panel import InstantBootPanel
+from app.ui.ksm_panel import KSMPanel
+from app.ui.netsim_panel import NetSimPanel
 from app.ui.network_panel import NetworkPanel
+from app.ui.plugin_panel import PluginPanel
+from app.ui.quarantine_panel import QuarantinePanel
+from app.ui.recording_panel import RecordingPanel
+from app.ui.team_library_panel import TeamLibraryPanel
+from app.ui.vm_handoff_panel import HandoffPanel
+from app.ui.vm_share_panel import VMSharePanel
+from app.ui.sandbox_panel import SandboxPanel
+from app.ui.streaming_panel import StreamingPanel
+from app.ui.webhook_panel import WebhookPanel
 from app.ui.perf_graph import PerformancePanel
+from app.ui.shared_folders_panel import SharedFoldersPanel
+from app.ui.snapshot_dag_panel import SnapshotDAGPanel
 from app.ui.snapshot_panel import SnapshotPanel
+from app.ui.timeline_panel import TimelinePanel
+from app.ui.spice_panel import SpicePanel
 from app.ui.theme import (
     ACCENT, BG_CARD, BG_ELEVATED, BG_PANEL, BORDER, FONT_FAMILY,
     TAB_STYLE, TEXT_MUTED, TEXT_ON_ACCENT, TEXT_PRIMARY, TEXT_SECONDARY,
@@ -50,9 +86,11 @@ class InfoCard(QFrame):
 
     def __init__(self, label: str, editable: bool = False,
                  step: int = 1, min_val: int = 1, max_val: int = 999999,
+                 show_separator: bool = False,
                  parent=None) -> None:
         super().__init__(parent)
         self._editable = editable
+        self._show_separator = show_separator
         self._step = step
         self._min_val = min_val
         self._max_val = max_val
@@ -63,15 +101,15 @@ class InfoCard(QFrame):
             InfoCard {{
                 background-color: {BG_CARD};
                 border: none;
-                border-radius: 8px;
+                border-radius: 10px;
             }}
         """)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(20, 18, 20, 16)
+        layout.setContentsMargins(20, 24, 20, 24)
         layout.setSpacing(0)
 
-        layout.addStretch(1)
+        layout.addStretch(2)
 
         self._label = QLabel(label.upper())
         self._label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
@@ -115,17 +153,30 @@ class InfoCard(QFrame):
 
         self._subtitle = QLabel("")
         self._subtitle.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self._subtitle.setMinimumHeight(16)
         self._subtitle.setStyleSheet(
-            f"color: {_SUBLABEL}; font-size: 10px; background: transparent;"
+            f"color: {_SUBLABEL}; font-size: 11px; background: transparent;"
             f" font-family: {FONT_FAMILY};")
 
         layout.addWidget(self._label)
-        layout.addSpacing(4)
+        layout.addSpacing(6)
         layout.addLayout(value_row)
-        layout.addSpacing(3)
+        layout.addSpacing(4)
         layout.addWidget(self._subtitle)
 
-        layout.addStretch(1)
+        if show_separator:
+            sep_row = QHBoxLayout()
+            sep_row.setContentsMargins(0, 6, 0, 0)
+            sep_row.addStretch(2)
+            sep_line = QFrame()
+            sep_line.setFixedHeight(1)
+            sep_line.setStyleSheet("background-color: #2a3545; border: none;")
+            sep_line.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            sep_row.addWidget(sep_line, 3)
+            sep_row.addStretch(2)
+            layout.addLayout(sep_row)
+
+        layout.addStretch(2)
 
         self.setLayout(layout)
 
@@ -184,29 +235,19 @@ class StatusBadge(QLabel):
 
     def set_status(self, status: str) -> None:
         if status == "running":
-            label = "RUNNING"
-            s = (f"color: {TEXT_ON_ACCENT}; background-color: {ACCENT};"
-                 f" border: none; border-radius: 12px; font-weight: 700;")
+            label, bg, fg = "RUNNING", "rgba(166,227,161,0.2)", "#a6e3a1"
         elif status == "paused":
-            label = "PAUSED"
-            s = (f"color: {TEXT_ON_ACCENT}; background-color: {ACCENT};"
-                 f" border: none; border-radius: 12px; font-weight: 700;")
+            label, bg, fg = "PAUSED", "rgba(249,226,175,0.2)", "#f9e2af"
         else:
-            label = "STOPPED"
-            s = (f"color: {TEXT_SECONDARY}; background-color: transparent;"
-                 f" border: 1px solid {TEXT_MUTED}; border-radius: 12px;"
-                 f" font-weight: 700;")
-
+            label, bg, fg = "STOPPED", "#45475a", "#ffffff"
         self.setText(label)
-        self.setStyleSheet(f"""
-            {s}
-            padding: 6px 16px;
-            font-size: 11px;
-            letter-spacing: 1px;
-            font-family: {FONT_FAMILY};
-        """)
-        self.setFixedHeight(30)
-        self.setFixedWidth(self.fontMetrics().horizontalAdvance(label) + 40)
+        self.setStyleSheet(
+            f"color: {fg}; background-color: {bg};"
+            f" border: none; border-radius: 6px; font-weight: 700;"
+            f" padding: 4px 8px; font-size: 11px; letter-spacing: 1px;"
+            f" font-family: {FONT_FAMILY};")
+        self.setFixedHeight(26)
+        self.setFixedWidth(self.fontMetrics().horizontalAdvance(label) + 24)
 
 
 class OverviewTab(QWidget):
@@ -217,19 +258,23 @@ class OverviewTab(QWidget):
         self.setStyleSheet(f"background-color: {BG_PANEL};")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 16, 0, 16)
-        layout.setSpacing(0)
+        layout.setContentsMargins(0, 16, 0, 0)
+        layout.setSpacing(12)
 
+        # 2x2 card grid — generous spacing, minimum 200px card height
         card_w = QWidget()
         card_w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         grid = QGridLayout(card_w)
-        grid.setSpacing(3)
+        grid.setSpacing(12)
         grid.setContentsMargins(0, 0, 0, 0)
 
         self.card_cpu = InfoCard("CPU Cores", editable=True, step=1, min_val=1, max_val=32)
         self.card_ram = InfoCard("Memory", editable=True, step=1024, min_val=1024, max_val=32768)
         self.card_disk = InfoCard("Storage")
         self.card_net = InfoCard("Network")
+
+        for c in (self.card_cpu, self.card_ram, self.card_disk, self.card_net):
+            c.setMinimumHeight(200)
 
         grid.addWidget(self.card_cpu, 0, 0)
         grid.addWidget(self.card_ram, 0, 1)
@@ -241,9 +286,18 @@ class OverviewTab(QWidget):
         grid.setColumnStretch(1, 1)
 
         layout.addWidget(card_w, 1)
-        layout.addSpacing(16)
 
-        # Bottom action bar: + NEW | START | STOP | PAUSE
+        # 1-core warning banner (hidden by default)
+        self._cpu_warn = QLabel(
+            "\u26a0  This VM has only 1 CPU core \u2014 consider increasing to 2 or more for better performance.")
+        self._cpu_warn.setWordWrap(True)
+        self._cpu_warn.setStyleSheet(
+            f"background-color: #2d2010; border: 1px solid #e6a817;"
+            f" border-radius: 6px; padding: 8px 12px; color: #e6a817; font-size: 11px;")
+        self._cpu_warn.hide()
+        layout.addWidget(self._cpu_warn)
+
+        # Action buttons — solid colours, 56px tall, no gradients
         btn_row = QWidget()
         btn_row_layout = QHBoxLayout(btn_row)
         btn_row_layout.setContentsMargins(0, 0, 0, 0)
@@ -254,12 +308,12 @@ class OverviewTab(QWidget):
         self.btn_stop = QPushButton("\u25a0 STOP")
         self.btn_pause = QPushButton("\u23f8 PAUSE")
 
-        # Permanent styles — hardcoded, never overridden
         self.btn_new.setStyleSheet(
-            f"QPushButton {{ background-color: #2a3040; color: #ffffff; border: none;"
-            f" border-radius: 8px; font-size: 14px; font-weight: 800;"
+            f"QPushButton {{ background-color: #313244; color: #ffffff;"
+            f" border: none; border-radius: 8px;"
+            f" font-size: 14px; font-weight: 800;"
             f" min-height: 52px; font-family: {FONT_FAMILY}; }}"
-            f"QPushButton:hover {{ background-color: #343e52; }}")
+            f"QPushButton:hover {{ background-color: #45475a; }}")
         self.btn_start.setStyleSheet(
             f"QPushButton {{ background-color: #4caf7d; color: #ffffff; border: none;"
             f" border-radius: 8px; font-size: 14px; font-weight: 800;"
@@ -269,7 +323,7 @@ class OverviewTab(QWidget):
             f" border-radius: 8px; font-size: 14px; font-weight: 800;"
             f" min-height: 52px; font-family: {FONT_FAMILY}; }}")
         self.btn_pause.setStyleSheet(
-            f"QPushButton {{ background-color: #ff9500; color: #ffffff; border: none;"
+            f"QPushButton {{ background-color: #f47b1f; color: #ffffff; border: none;"
             f" border-radius: 8px; font-size: 14px; font-weight: 800;"
             f" min-height: 52px; font-family: {FONT_FAMILY}; }}")
 
@@ -285,7 +339,6 @@ class OverviewTab(QWidget):
         btn_row_layout.addWidget(self.btn_stop)
         btn_row_layout.addWidget(self.btn_pause)
 
-        btn_row.setContentsMargins(0, 0, 0, 16)
         layout.addWidget(btn_row)
 
 
@@ -428,7 +481,7 @@ class VMControlPanel(QFrame):
         outer.setContentsMargins(40, 28, 40, 24)
         outer.setSpacing(0)
 
-        # Header — VM name + badge (no pencil, no edit button)
+        # Header — VM name + badges
         header = QHBoxLayout()
         header.setContentsMargins(0, 0, 0, 0)
 
@@ -442,6 +495,10 @@ class VMControlPanel(QFrame):
         header.addWidget(self.name_label)
         header.addStretch()
 
+        # Hidden branch badge (kept for signal compatibility but not shown)
+        self.branch_badge = QLabel("main")
+        self.branch_badge.hide()
+
         self.status_badge = StatusBadge()
         header.addWidget(self.status_badge, 0, Qt.AlignmentFlag.AlignVCenter)
         outer.addLayout(header)
@@ -454,17 +511,43 @@ class VMControlPanel(QFrame):
             f" font-family: {FONT_FAMILY};")
         outer.addWidget(self.subtitle_label)
 
-        outer.addSpacing(16)
-        div = QFrame()
-        div.setFixedHeight(1)
-        div.setStyleSheet(f"background-color: {BG_ELEVATED};")
-        outer.addWidget(div)
-        outer.addSpacing(16)
+        self.kvm_status_label = QLabel("")
+        self.kvm_status_label.setStyleSheet(
+            f"color: {TEXT_MUTED}; font-size: 11px; background: transparent;"
+            f" font-family: {FONT_FAMILY};")
+        outer.addWidget(self.kvm_status_label)
 
+        outer.addSpacing(10)
+
+        divider = QFrame()
+        divider.setFrameShape(QFrame.Shape.HLine)
+        divider.setFixedHeight(1)
+        divider.setStyleSheet(f"background-color: #2a3545; border: none;")
+        outer.addWidget(divider)
+
+        # ── Main 5 tabs: Overview | Console | Snapshots | AI Assistant | cog ──
+        # 32px gap between tabs achieved via generous padding
         self.tabs = QTabWidget()
-        self.tabs.setStyleSheet(TAB_STYLE)
         self.tabs.setDocumentMode(True)
+        self.tabs.setStyleSheet(f"""
+            QTabWidget {{ border: none; }}
+            QTabWidget::pane {{ border: none; margin: 0; padding: 0; background-color: {BG_PANEL}; }}
+            QTabBar {{ border: none; background: transparent; }}
+            QTabBar::tab {{
+                background: transparent; color: #6c7086;
+                border: none;
+                padding: 14px 32px; font-size: 13px; font-weight: 500;
+                font-family: {FONT_FAMILY}; margin: 0;
+            }}
+            QTabBar::tab:selected {{
+                color: {TEXT_PRIMARY}; font-weight: 600;
+            }}
+            QTabBar::tab:hover:!selected {{
+                color: #8a9e90;
+            }}
+        """)
 
+        # Create all panels (keep references for signal wiring)
         self.overview_tab = OverviewTab()
         self.console_panel = ConsolePanel()
         self.perf_panel = PerformancePanel()
@@ -473,18 +556,148 @@ class VMControlPanel(QFrame):
         self.usb_panel = USBPanel()
         self.gpu_panel = GPUPanel()
         self.display_panel = DisplayPanel()
+        self.disk_perf_panel = DiskPerfPanel()
+        self.ksm_panel = KSMPanel()
+        self.balloon_panel = BalloonPanel()
+        self.hugepages_panel = HugepagesPanel()
+        self.instant_boot_panel = InstantBootPanel()
+        self.audio_panel = AudioPanel()
+        self.clipboard_panel = ClipboardPanel()
+        self.shared_folders_panel = SharedFoldersPanel()
+        self.spice_panel = SpicePanel()
+        self.netsim_panel = NetSimPanel()
+        self.dns_panel = DNSPanel()
+        self.snap_dag_panel = SnapshotDAGPanel()
+        self.encryption_panel = EncryptionPanel()
+        self.audit_panel = AuditPanel()
+        self.firewall_panel = FirewallPanel()
+        self.dns_filter_panel = DNSFilterPanel()
+        self.quarantine_panel = QuarantinePanel()
+        self.apparmor_panel = AppArmorPanel()
+        self.timeline_panel = TimelinePanel()
+        self.ai_assistant = AIAssistantPanel()
+        self.ai_pruner = SnapshotPrunerPanel()
+        self.iommu_panel = IOMMUPanel()
+        self.webcam_panel = WebcamPanel()
+        self.sandbox_panel = SandboxPanel()
+        self.fake_internet_panel = FakeInternetPanel()
+        self.archaeology_panel = ArchaeologyPanel()
+        self.streaming_panel = StreamingPanel()
+        self.webhook_panel = WebhookPanel()
+        self.plugin_panel = PluginPanel()
+        self.gh_actions_panel = GitHubActionsPanel()
+        self.terraform_panel = TerraformPanel()
+        self.enterprise_panel = EnterprisePanel()
+        self.vm_share_panel = VMSharePanel()
+        self.handoff_panel = HandoffPanel()
+        self.team_library_panel = TeamLibraryPanel()
+        self.recording_panel = RecordingPanel()
+        self.cloud_panel = CloudPanel()
 
+        # Settings items list
+        self._settings_items: list[tuple[str, QWidget]] = [
+            ("Performance", self.perf_panel),
+            ("Disk I/O", self.disk_perf_panel),
+            ("Balloon", self.balloon_panel),
+            ("Audio", self.audio_panel),
+            ("Network", self.network_panel),
+            ("Net Sim", self.netsim_panel),
+            ("DNS", self.dns_panel),
+            ("USB", self.usb_panel),
+            ("Webcam", self.webcam_panel),
+            ("GPU", self.gpu_panel),
+            ("Display", self.display_panel),
+            ("Firewall", self.firewall_panel),
+            ("Encryption", self.encryption_panel),
+            ("AppArmor", self.apparmor_panel),
+            ("Cloud", self.cloud_panel),
+            ("Streaming", self.streaming_panel),
+            ("Developer", self.enterprise_panel),
+            ("RBAC", self.enterprise_panel),
+            ("Audit Log", self.audit_panel),
+            ("Webhooks", self.webhook_panel),
+            ("Plugins", self.plugin_panel),
+        ]
+
+        # Settings page: grid of category cards + stacked panels
+        from PySide6.QtWidgets import QStackedWidget, QScrollArea
+        self._settings_page = QFrame()
+        self._settings_page.setStyleSheet(f"background-color: {BG_PANEL}; border: none;")
+        sp_outer = QVBoxLayout(self._settings_page)
+        sp_outer.setContentsMargins(0, 0, 0, 0)
+        sp_outer.setSpacing(0)
+
+        self._settings_stack = QStackedWidget()
+
+        # Page 0: the grid of cards
+        grid_page = QWidget()
+        grid_page.setStyleSheet(f"background-color: {BG_PANEL};")
+        gp_lay = QVBoxLayout(grid_page)
+        gp_lay.setContentsMargins(20, 16, 20, 16)
+        gp_lay.setSpacing(12)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet(f"QScrollArea {{ border: none; background: {BG_PANEL}; }}")
+        grid_container = QWidget()
+        grid_container.setStyleSheet("background: transparent;")
+        grid = QGridLayout(grid_container)
+        grid.setSpacing(20)
+        _LINK = (f"QPushButton {{ background: transparent; color: #6c7086;"
+                 f" border: none;"
+                 f" font-size: 14px; font-weight: 500; font-family: {FONT_FAMILY};"
+                 f" padding: 12px 0; }}"
+                 f"QPushButton:hover {{ color: {TEXT_PRIMARY}; }}")
+        for i, (name, _) in enumerate(self._settings_items):
+            btn = QPushButton(name)
+            btn.setStyleSheet(_LINK)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(lambda ch, idx=i: self._open_settings_panel(idx))
+            grid.addWidget(btn, i // 3, i % 3)
+        scroll.setWidget(grid_container)
+        gp_lay.addWidget(scroll, 1)
+        self._settings_stack.addWidget(grid_page)  # index 0
+
+        # Pages 1..N: individual settings panels with back button
+        for _, panel in self._settings_items:
+            wrapper = QWidget()
+            wrapper.setStyleSheet(f"background-color: {BG_PANEL};")
+            wl = QVBoxLayout(wrapper)
+            wl.setContentsMargins(0, 0, 0, 0)
+            wl.setSpacing(0)
+            back = QPushButton("\u2190 Back")
+            back.setStyleSheet(
+                f"QPushButton {{ background: transparent; color: {TEXT_SECONDARY};"
+                f" border: none; padding: 10px 16px; font-size: 13px;"
+                f" font-family: {FONT_FAMILY}; }}"
+                f"QPushButton:hover {{ color: {TEXT_PRIMARY}; }}")
+            back.setCursor(Qt.CursorShape.PointingHandCursor)
+            back.setFixedHeight(40)
+            back.clicked.connect(lambda: self._settings_stack.setCurrentIndex(0))
+            wl.addWidget(back)
+            wl.addWidget(panel, 1)
+            self._settings_stack.addWidget(wrapper)
+
+        sp_outer.addWidget(self._settings_stack, 1)
+
+        # Main 5 tabs
         self.tabs.addTab(self.overview_tab, "Overview")
         self.tabs.addTab(self.console_panel, "Console")
-        self.tabs.addTab(self.perf_panel, "Performance")
-        self.tabs.addTab(self.network_panel, "Network")
-        self.tabs.addTab(self.usb_panel, "USB")
-        self.tabs.addTab(self.gpu_panel, "GPU")
-        self.tabs.addTab(self.display_panel, "Display")
-        self.tabs.addTab(self.snapshot_panel, "Snapshots")
+        self.tabs.addTab(self.snap_dag_panel, "Snapshots")
+        self.tabs.addTab(self.ai_assistant, "AI Assistant")
+        self.tabs.addTab(self._settings_page, "\u2699")
+
+        # Reset settings grid when entering cog tab
+        self.tabs.currentChanged.connect(self._on_main_tab_changed)
 
         outer.addWidget(self.tabs, 1)
         self.set_buttons_for_state("stopped")
+
+    def _on_main_tab_changed(self, index: int) -> None:
+        if self.tabs.tabText(index) == "\u2699":
+            self._settings_stack.setCurrentIndex(0)
+
+    def _open_settings_panel(self, idx: int) -> None:
+        self._settings_stack.setCurrentIndex(idx + 1)  # +1 because grid is at index 0
 
     @property
     def btn_start(self) -> QPushButton:
@@ -501,17 +714,34 @@ class VMControlPanel(QFrame):
     def set_vm_info(self, name, ram, cpus, disk, net_mode="",
                     display_backend="gtk", vga_type="virtio",
                     usb_count=0, gpu_count=0) -> None:
-        self.name_label.setText(name)
+        title_name = " ".join("VM" if w.lower() == "vm" else w.capitalize() for w in name.split()) if name else name
+        self.name_label.setText(title_name)
+        # Keep window title static
+        w = self.window()
+        if w:
+            w.setWindowTitle("Icosele Vault")
         self.overview_tab.card_cpu.set_value(
             str(cpus), "vCPU" + ("s" if cpus != 1 else ""), "KVM accelerated")
+        self.overview_tab._cpu_warn.setVisible(cpus == 1)
         self.overview_tab.card_ram.set_value(
             str(ram), "MB", "Allocated RAM")
 
         if disk:
-            disk_name = os.path.basename(disk)
-            ext = os.path.splitext(disk_name)[1].lstrip(".").lower()
-            disk_type = ext if ext else "disk"
-            self.overview_tab.card_disk.set_value(disk_name, "", disk_type)
+            import subprocess, json as _json
+            fmt = "qcow2"
+            size_sub = ""
+            try:
+                out = subprocess.check_output(
+                    ["qemu-img", "info", "--output=json", disk],
+                    timeout=5, stderr=subprocess.DEVNULL)
+                info = _json.loads(out)
+                fmt = info.get("format", "qcow2")
+                vsize = info.get("virtual-size", 0)
+                if vsize:
+                    size_sub = f"{vsize / (1024**3):.1f} GB"
+            except Exception:
+                pass
+            self.overview_tab.card_disk.set_value(fmt, "", size_sub or os.path.basename(disk)[:20])
         else:
             self.overview_tab.card_disk.set_value(
                 "No disk", "", "Edit VM to attach a disk")
@@ -519,6 +749,18 @@ class VMControlPanel(QFrame):
         net_label = {"nat": "NAT", "bridge": "Bridged", "hostonly": "Host-only"}.get(net_mode, "NAT")
         self.overview_tab.card_net.set_value(net_label, "", "virtio-net")
         self.perf_panel.set_ram_max(float(ram))
+
+    def set_kvm_status(self, enabled: bool) -> None:
+        if enabled:
+            self.kvm_status_label.setText("KVM acceleration: enabled")
+            self.kvm_status_label.setStyleSheet(
+                f"color: #a6e3a1; font-size: 11px; background: transparent;"
+                f" font-family: {FONT_FAMILY};")
+        else:
+            self.kvm_status_label.setText("KVM acceleration: disabled \u2014 performance will be reduced")
+            self.kvm_status_label.setStyleSheet(
+                f"color: #e6a817; font-size: 11px; background: transparent;"
+                f" font-family: {FONT_FAMILY};")
 
     def set_buttons_for_state(self, status: str) -> None:
         is_running = status == "running"
@@ -536,4 +778,5 @@ class VMControlPanel(QFrame):
         self.status_badge.set_status(status if status else "stopped")
         self.console_panel.set_status(status if status else "stopped")
         self.snapshot_panel.set_enabled(is_running or is_paused)
+        self.snap_dag_panel.set_enabled(is_running or is_paused)
         self.usb_panel.set_vm_running(is_running or is_paused)

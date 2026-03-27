@@ -10,7 +10,13 @@ from PySide6.QtWidgets import (
     QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
-from app.ui.theme import BG_PANEL, SECTION_LABEL_STYLE, TREE_STYLE, save_btn_style, subtle_btn_style
+from datetime import datetime, timezone
+
+from app.ui.theme import (
+    ACCENT, BG_CARD, BG_PANEL, BORDER, FONT_FAMILY, SECTION_LABEL_STYLE,
+    TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY, TREE_STYLE,
+    save_btn_style, subtle_btn_style,
+)
 
 log = logging.getLogger(__name__)
 
@@ -77,10 +83,12 @@ def _setup_tree(tree: QTreeWidget, height: int) -> None:
 class USBPanel(QFrame):
     usb_action = Signal(str, str, str, str)
     config_changed = Signal(list)
+    remembered_changed = Signal(list)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._assigned: list[USBDeviceInfo] = []
+        self._remembered: list[dict] = []
         self._vm_running = False
         self._build_ui()
 
@@ -126,6 +134,12 @@ class USBPanel(QFrame):
         bot.addWidget(self.btn_remove)
         bot.addStretch()
         layout.addLayout(bot)
+
+        # Remembered devices (Task 1)
+        layout.addWidget(self._sl("REMEMBERED DEVICES"))
+        self._remembered_list = QVBoxLayout()
+        self._remembered_list.setSpacing(4)
+        layout.addLayout(self._remembered_list)
         layout.addStretch()
         self.refresh_host_devices()
 
@@ -156,6 +170,81 @@ class USBPanel(QFrame):
             item.setData(0, Qt.ItemDataRole.UserRole, dev)
             self.assigned_tree.addTopLevelItem(item)
 
+    def set_remembered_devices(self, devices: list[dict]) -> None:
+        self._remembered = list(devices)
+        self._rebuild_remembered()
+
+    def _rebuild_remembered(self) -> None:
+        while self._remembered_list.count():
+            w = self._remembered_list.takeAt(0).widget()
+            if w:
+                w.deleteLater()
+        if not self._remembered:
+            lbl = QLabel("No remembered devices.")
+            lbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px; background: transparent;")
+            self._remembered_list.addWidget(lbl)
+            return
+        for i, rd in enumerate(self._remembered):
+            from PySide6.QtWidgets import QCheckBox
+            row = QFrame()
+            row.setStyleSheet(f"background-color: {BG_CARD}; border: 1px solid {BORDER}; border-radius: 4px;")
+            rl = QHBoxLayout(row)
+            rl.setContentsMargins(8, 4, 8, 4)
+            rl.setSpacing(6)
+            name = rd.get("device_name", f"{rd.get('vendor_id', '?')}:{rd.get('product_id', '?')}")
+            last = (rd.get("last_connected") or "")[:16].replace("T", " ")
+            lbl = QLabel(f"{name}  ({last})")
+            lbl.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 10px; background: transparent;")
+            rl.addWidget(lbl, 1)
+            auto_cb = QCheckBox("Auto")
+            auto_cb.setChecked(rd.get("auto_connect", False))
+            auto_cb.setStyleSheet(f"QCheckBox {{ color: {TEXT_SECONDARY}; font-size: 10px; background: transparent; }}")
+            auto_cb.toggled.connect(lambda checked, idx=i: self._on_auto_toggle(idx, checked))
+            rl.addWidget(auto_cb)
+            rm_btn = QPushButton("\u2715")
+            rm_btn.setFixedSize(22, 22)
+            rm_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            rm_btn.setStyleSheet(f"QPushButton {{ background: transparent; color: {TEXT_MUTED}; border: none; font-size: 12px; }} QPushButton:hover {{ color: #e74c3c; }}")
+            rm_btn.clicked.connect(lambda checked, idx=i: self._on_forget(idx))
+            rl.addWidget(rm_btn)
+            self._remembered_list.addWidget(row)
+
+    def _on_auto_toggle(self, idx: int, checked: bool) -> None:
+        if 0 <= idx < len(self._remembered):
+            self._remembered[idx]["auto_connect"] = checked
+            self.remembered_changed.emit(self._remembered)
+
+    def _on_forget(self, idx: int) -> None:
+        if 0 <= idx < len(self._remembered):
+            self._remembered.pop(idx)
+            self._rebuild_remembered()
+            self.remembered_changed.emit(self._remembered)
+
+    def _remember_device(self, dev: USBDeviceInfo) -> None:
+        for rd in self._remembered:
+            if rd.get("vendor_id") == dev.vendor_id and rd.get("product_id") == dev.product_id:
+                rd["last_connected"] = datetime.now(timezone.utc).isoformat()
+                self.remembered_changed.emit(self._remembered)
+                self._rebuild_remembered()
+                return
+        self._remembered.append({
+            "vendor_id": dev.vendor_id,
+            "product_id": dev.product_id,
+            "device_name": dev.display_name,
+            "last_connected": datetime.now(timezone.utc).isoformat(),
+            "auto_connect": False,
+        })
+        self.remembered_changed.emit(self._remembered)
+        self._rebuild_remembered()
+
+    def check_auto_connect(self, vendor_id: str, product_id: str) -> bool:
+        for rd in self._remembered:
+            if (rd.get("vendor_id") == vendor_id and
+                    rd.get("product_id") == product_id and
+                    rd.get("auto_connect", False)):
+                return True
+        return False
+
     def _on_add(self) -> None:
         item = self.host_tree.currentItem()
         if item is None:
@@ -165,6 +254,7 @@ class USBPanel(QFrame):
             return
         self._assigned.append(dev)
         self._rebuild()
+        self._remember_device(dev)
         self.config_changed.emit([d.config_dict() for d in self._assigned])
         if self._vm_running:
             self.usb_action.emit("add", dev.bus, dev.addr, f"usb-host-{dev.bus}-{dev.addr}")

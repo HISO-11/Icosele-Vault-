@@ -1,4 +1,4 @@
-# NovaMachine
+# Icosele Vault
 
 A PySide6-based virtual machine management GUI that communicates with QEMU via QMP (QEMU Machine Protocol).
 
@@ -31,7 +31,7 @@ The application loads VM configurations from `data/vms/*.json`. A default `test-
 - **app/qemu/process.py** -- QEMU subprocess lifecycle management
 - **app/qemu/qmp.py** -- QMP socket protocol (connect, negotiate, send commands)
 - **app/main_window.py** -- Main window wiring QMP to UI
-- **app/ui/theme.py** -- NovaMachine design system (dark green palette)
+- **app/ui/theme.py** -- Icosele Vault design system (dark green palette)
 - **app/ui/vm_list.py** -- Sidebar machine list
 - **app/ui/vm_controls.py** -- Tabbed control panel (Overview, Performance, Network, USB, GPU, Display, Snapshots)
 - **config/vm_config.py** -- VM configuration dataclass with JSON serialization

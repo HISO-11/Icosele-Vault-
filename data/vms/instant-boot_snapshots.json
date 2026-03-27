@@ -1,0 +1,132 @@
+[
+  {
+    "id": "151945b767d9",
+    "name": "auto-20260327-1344",
+    "tag": "auto-20260327-1344",
+    "parent_id": null,
+    "created_at": "2026-03-27T13:44:21.665587+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "auto"
+  },
+  {
+    "id": "cb7637479ee4",
+    "name": "crash_20260327_170603",
+    "tag": "crash",
+    "parent_id": null,
+    "created_at": "2026-03-27T17:06:03.089091+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "d03d102058a5",
+    "name": "crash_20260327_170627",
+    "tag": "crash",
+    "parent_id": "cb7637479ee4",
+    "created_at": "2026-03-27T17:06:27.074218+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "40f13fd166f1",
+    "name": "crash_20260327_170629",
+    "tag": "crash",
+    "parent_id": "d03d102058a5",
+    "created_at": "2026-03-27T17:06:29.065424+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "60f26e49ffdf",
+    "name": "crash_20260327_170631",
+    "tag": "crash",
+    "parent_id": "40f13fd166f1",
+    "created_at": "2026-03-27T17:06:31.070251+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "fc377a818a16",
+    "name": "crash_20260327_170635",
+    "tag": "crash",
+    "parent_id": "60f26e49ffdf",
+    "created_at": "2026-03-27T17:06:35.064586+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "ab94bb7d458a",
+    "name": "crash_20260327_170827",
+    "tag": "crash",
+    "parent_id": "fc377a818a16",
+    "created_at": "2026-03-27T17:08:27.066814+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "e753fe03db32",
+    "name": "crash_20260327_170829",
+    "tag": "crash",
+    "parent_id": "ab94bb7d458a",
+    "created_at": "2026-03-27T17:08:29.067945+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "4a9d2aaf2746",
+    "name": "crash_20260327_170831",
+    "tag": "crash",
+    "parent_id": "e753fe03db32",
+    "created_at": "2026-03-27T17:08:31.071204+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "292f4383c8bd",
+    "name": "crash_20260327_170833",
+    "tag": "crash",
+    "parent_id": "4a9d2aaf2746",
+    "created_at": "2026-03-27T17:08:33.068236+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "6819ba7b6356",
+    "name": "crash_20260327_171233",
+    "tag": "crash",
+    "parent_id": "292f4383c8bd",
+    "created_at": "2026-03-27T17:12:33.063144+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "7dfcb9c6c1a6",
+    "name": "crash_20260327_171305",
+    "tag": "crash",
+    "parent_id": "6819ba7b6356",
+    "created_at": "2026-03-27T17:13:05.071852+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "crashes"
+  },
+  {
+    "id": "1e4cd989df39",
+    "name": "boom",
+    "tag": "",
+    "parent_id": null,
+    "created_at": "2026-03-27T17:24:52.360887+00:00",
+    "ram_size_mb": 0,
+    "disk_size_mb": 0,
+    "branch_name": "main"
+  }
+]

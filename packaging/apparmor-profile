@@ -1,21 +1,21 @@
-# AppArmor profile for NovaMachine (QEMU GUI manager)
+# AppArmor profile for Icosele Vault (QEMU GUI manager)
 #
 # Installation:
-#   1. Copy this file to /etc/apparmor.d/novamachine
-#      sudo cp packaging/apparmor-profile /etc/apparmor.d/novamachine
+#   1. Copy this file to /etc/apparmor.d/icosele-vault
+#      sudo cp packaging/apparmor-profile /etc/apparmor.d/icosele-vault
 #
 #   2. Reload AppArmor:
-#      sudo apparmor_parser -r /etc/apparmor.d/novamachine
+#      sudo apparmor_parser -r /etc/apparmor.d/icosele-vault
 #
 #   3. To enforce:
-#      sudo aa-enforce /etc/apparmor.d/novamachine
+#      sudo aa-enforce /etc/apparmor.d/icosele-vault
 #
 #   4. To test in complain mode first (logs violations without blocking):
-#      sudo aa-complain /etc/apparmor.d/novamachine
+#      sudo aa-complain /etc/apparmor.d/icosele-vault
 
 #include <tunables/global>
 
-profile novamachine /usr/bin/novamachine flags=(complain) {
+profile icosele-vault /usr/bin/icosele-vault flags=(complain) {
   #include <abstractions/base>
   #include <abstractions/python>
   #include <abstractions/nameservice>
@@ -24,7 +24,7 @@ profile novamachine /usr/bin/novamachine flags=(complain) {
   #include <abstractions/fonts>
   #include <abstractions/qt5>
 
-  # NovaMachine data directory — read/write VM configs
+  # Icosele Vault data directory — read/write VM configs
   owner @{HOME}/qemu-gui/data/vms/ r,
   owner @{HOME}/qemu-gui/data/vms/** rw,
 
@@ -46,8 +46,8 @@ profile novamachine /usr/bin/novamachine flags=(complain) {
   owner @{HOME}/**.raw rw,
 
   # Per-VM runtime directory for QMP sockets and PID files
-  owner /tmp/novamachine/ rw,
-  owner /tmp/novamachine/** rw,
+  owner /tmp/icosele-vault/ rw,
+  owner /tmp/icosele-vault/** rw,
 
   # XDG runtime dir (fallback socket location)
   owner /run/user/*/qemu-*.sock rw,

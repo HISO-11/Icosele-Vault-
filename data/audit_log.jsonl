@@ -1,0 +1,40 @@
+{"timestamp": "2026-03-27T09:18:25.370633+00:00", "action": "test_action", "vm_id": "test-vm", "vm_name": "Test VM", "user": "jl", "details": {"key": "val"}}
+{"timestamp": "2026-03-27T13:07:02.862235+00:00", "action": "vm_created", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:07:08.092610+00:00", "action": "vm_deleted", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:07:12.196402+00:00", "action": "vm_deleted", "vm_id": "ubuntu-vm", "vm_name": "ubuntu vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:07:25.952169+00:00", "action": "vm_started", "vm_id": "test-vm", "vm_name": "test vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:08:02.204833+00:00", "action": "vm_started", "vm_id": "test-vm", "vm_name": "test vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:08:04.767150+00:00", "action": "vm_stopped", "vm_id": "test-vm", "vm_name": "test vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:08:04.790890+00:00", "action": "snapshot_create", "vm_id": "test-vm", "vm_name": "test vm", "user": "jl", "details": {"tag": "auto-20260327-1308", "reason": "AI recommended: Over 24h since last snapshot"}}
+{"timestamp": "2026-03-27T13:08:06.266313+00:00", "action": "vm_started", "vm_id": "test-vm", "vm_name": "test vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:18:28.065210+00:00", "action": "vm_created", "vm_id": "my-ubuntu", "vm_name": "my ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:18:31.910199+00:00", "action": "vm_started", "vm_id": "my-ubuntu", "vm_name": "my ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:19:18.158792+00:00", "action": "vm_started", "vm_id": "my-ubuntu", "vm_name": "my ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:25:09.640869+00:00", "action": "vm_created", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:32:05.337815+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:43:53.688622+00:00", "action": "vm_created", "vm_id": "ooo", "vm_name": "ooo", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:44:00.152247+00:00", "action": "vm_deleted", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:44:02.172651+00:00", "action": "vm_deleted", "vm_id": "test-vm", "vm_name": "test vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:44:03.993180+00:00", "action": "vm_deleted", "vm_id": "my-ubuntu", "vm_name": "my ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:44:21.645227+00:00", "action": "vm_stopped", "vm_id": "ooo", "vm_name": "ooo", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T13:44:21.666281+00:00", "action": "snapshot_create", "vm_id": "ooo", "vm_name": "ooo", "user": "jl", "details": {"tag": "auto-20260327-1344", "reason": "AI recommended: Over 24h since last snapshot"}}
+{"timestamp": "2026-03-27T15:33:03.258484+00:00", "action": "vm_created", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T15:33:06.659909+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T15:36:25.346142+00:00", "action": "snapshot_create", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {"snapshot_name": "boom"}}
+{"timestamp": "2026-03-27T15:36:42.826320+00:00", "action": "snapshot_restore", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {"snapshot_name": "boom"}}
+{"timestamp": "2026-03-27T15:38:01.655829+00:00", "action": "vm_cloned", "vm_id": "ooo", "vm_name": "ooo", "user": "jl", "details": {"clone_name": "instant boot"}}
+{"timestamp": "2026-03-27T15:38:23.379730+00:00", "action": "vm_stopped", "vm_id": "ooo", "vm_name": "ooo", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T15:38:27.393299+00:00", "action": "vm_deleted", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T15:38:30.194178+00:00", "action": "vm_deleted", "vm_id": "ooo", "vm_name": "ooo", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T15:49:08.714344+00:00", "action": "vm_started", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {}}
+{"timestamp": "2026-03-27T17:06:03.050440+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170603"}}
+{"timestamp": "2026-03-27T17:06:27.045998+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170627"}}
+{"timestamp": "2026-03-27T17:06:29.045946+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170629"}}
+{"timestamp": "2026-03-27T17:06:31.046581+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170631"}}
+{"timestamp": "2026-03-27T17:06:35.045640+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170635"}}
+{"timestamp": "2026-03-27T17:08:27.046603+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170827"}}
+{"timestamp": "2026-03-27T17:08:29.046195+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170829"}}
+{"timestamp": "2026-03-27T17:08:31.047015+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170831"}}
+{"timestamp": "2026-03-27T17:08:33.046070+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_170833"}}
+{"timestamp": "2026-03-27T17:12:33.046433+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_171233"}}
+{"timestamp": "2026-03-27T17:13:05.046644+00:00", "action": "vm_crashed", "vm_id": "instant-boot", "vm_name": "instant boot", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260327_171305"}}

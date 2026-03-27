@@ -159,15 +159,22 @@ class DisplayPanel(QFrame):
         args: list[str] = []
         b = self.display_combo.currentData() or "gtk"
         v = self.vga_combo.currentData() or "virtio"
+        use_gl = v == "virtio" and b in ("gtk", "sdl")
         if b == "vnc":
             args += ["-display", f"vnc=:{self.vnc_port.value() - 5900}"]
         elif b == "spice":
             args += ["-display", "spice-app"]
         elif b == "none":
             args += ["-display", "none"]
+        elif use_gl:
+            args += ["-display", f"{b},gl=on"]
         else:
             args += ["-display", b]
-        args += ["-vga", v]
+        if v == "virtio":
+            args += ["-vga", "none"]
+            args += ["-device", "virtio-gpu-gl" if use_gl else "virtio-gpu"]
+        else:
+            args += ["-vga", v]
         r = self.resolution_input.text().strip()
         if r and "x" in r and v != "none":
             p = r.split("x")

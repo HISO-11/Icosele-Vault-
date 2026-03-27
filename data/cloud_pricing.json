@@ -1,0 +1,162 @@
+{
+  "aws": [
+    {
+      "type": "t3.micro",
+      "vcpu": 1,
+      "ram_gb": 1,
+      "price": 8
+    },
+    {
+      "type": "t3.small",
+      "vcpu": 2,
+      "ram_gb": 2,
+      "price": 15
+    },
+    {
+      "type": "t3.medium",
+      "vcpu": 2,
+      "ram_gb": 4,
+      "price": 30
+    },
+    {
+      "type": "t3.large",
+      "vcpu": 2,
+      "ram_gb": 8,
+      "price": 60
+    },
+    {
+      "type": "t3.xlarge",
+      "vcpu": 4,
+      "ram_gb": 16,
+      "price": 120
+    }
+  ],
+  "gcp": [
+    {
+      "type": "e2-micro",
+      "vcpu": 2,
+      "ram_gb": 1,
+      "price": 6
+    },
+    {
+      "type": "e2-small",
+      "vcpu": 2,
+      "ram_gb": 2,
+      "price": 13
+    },
+    {
+      "type": "e2-medium",
+      "vcpu": 2,
+      "ram_gb": 4,
+      "price": 25
+    },
+    {
+      "type": "e2-standard-2",
+      "vcpu": 2,
+      "ram_gb": 8,
+      "price": 49
+    },
+    {
+      "type": "e2-standard-4",
+      "vcpu": 4,
+      "ram_gb": 16,
+      "price": 97
+    }
+  ],
+  "azure": [
+    {
+      "type": "B1s",
+      "vcpu": 1,
+      "ram_gb": 1,
+      "price": 8
+    },
+    {
+      "type": "B1ms",
+      "vcpu": 1,
+      "ram_gb": 2,
+      "price": 15
+    },
+    {
+      "type": "B2s",
+      "vcpu": 2,
+      "ram_gb": 4,
+      "price": 30
+    },
+    {
+      "type": "B2ms",
+      "vcpu": 2,
+      "ram_gb": 8,
+      "price": 58
+    },
+    {
+      "type": "D2s_v3",
+      "vcpu": 2,
+      "ram_gb": 8,
+      "price": 70
+    }
+  ],
+  "do": [
+    {
+      "type": "s-1vcpu-1gb",
+      "vcpu": 1,
+      "ram_gb": 1,
+      "price": 6
+    },
+    {
+      "type": "s-1vcpu-2gb",
+      "vcpu": 1,
+      "ram_gb": 2,
+      "price": 12
+    },
+    {
+      "type": "s-2vcpu-2gb",
+      "vcpu": 2,
+      "ram_gb": 2,
+      "price": 18
+    },
+    {
+      "type": "s-2vcpu-4gb",
+      "vcpu": 2,
+      "ram_gb": 4,
+      "price": 24
+    },
+    {
+      "type": "s-4vcpu-8gb",
+      "vcpu": 4,
+      "ram_gb": 8,
+      "price": 48
+    }
+  ],
+  "hetzner": [
+    {
+      "type": "cx11",
+      "vcpu": 1,
+      "ram_gb": 2,
+      "price": 4
+    },
+    {
+      "type": "cx21",
+      "vcpu": 2,
+      "ram_gb": 4,
+      "price": 6
+    },
+    {
+      "type": "cx31",
+      "vcpu": 2,
+      "ram_gb": 8,
+      "price": 10
+    },
+    {
+      "type": "cx41",
+      "vcpu": 4,
+      "ram_gb": 16,
+      "price": 17
+    },
+    {
+      "type": "cx51",
+      "vcpu": 8,
+      "ram_gb": 32,
+      "price": 33
+    }
+  ]
+}

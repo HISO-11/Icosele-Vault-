@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QPoint, QRect, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QMouseEvent, QPainter
+from PySide6.QtCore import QEvent, QPoint, QRect, QRectF, Qt, Signal, QTimer
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QInputDialog, QLabel, QLineEdit,
     QListWidget, QListWidgetItem, QMenu, QMessageBox,
@@ -12,13 +12,24 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.theme import (
-    ACCENT, BG_CARD, BG_DEEP, BG_ELEVATED, BORDER,
-    FONT_FAMILY, SUCCESS, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY,
+    ACCENT, ACCENT_LIGHT, BG_CARD, BG_DEEP, BG_ELEVATED, BORDER,
+    FONT_FAMILY, STOP_RED, SUCCESS, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY, WARNING,
 )
+
+_ICOSELE_ORANGE = "#f47b1f"
+_AVATAR_COLORS = ["#a6e3a1", "#89b4fa", "#cba6f7", "#f9e2af", "#fab387", "#f38ba8", "#94e2d5", "#74c7ec"]
+
+def _name_color(name: str) -> str:
+    h = sum(ord(c) for c in name)
+    return _AVATAR_COLORS[h % len(_AVATAR_COLORS)]
 from config.vm_config import VMConfig
 
 STATUS_DOT_ROLE = Qt.ItemDataRole.UserRole + 1
 OS_LABEL_ROLE = Qt.ItemDataRole.UserRole + 2
+THUMB_ROLE = Qt.ItemDataRole.UserRole + 4
+CPU_BAR_ROLE = Qt.ItemDataRole.UserRole + 5
+RAM_BAR_ROLE = Qt.ItemDataRole.UserRole + 6
+NET_BAR_ROLE = Qt.ItemDataRole.UserRole + 7
 
 
 def _arch_from_binary(qemu_binary: str) -> str:
@@ -40,62 +51,74 @@ class VMItemDelegate(QStyledItemDelegate):
         super().__init__(parent)
         self._hovered_row: int = -1
         self._mouse_x: int = 0
+        self._pulse_phase: int = 0
 
     def set_hovered(self, row: int, mouse_x: int = 0) -> None:
         self._hovered_row = row
         self._mouse_x = mouse_x
+
+    def advance_pulse(self) -> None:
+        self._pulse_phase = (self._pulse_phase + 1) % 20
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index) -> None:
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = option.rect
         is_selected = bool(option.state & QStyle.StateFlag.State_Selected)
         is_hovered = (index.row() == self._hovered_row)
+        is_running = bool(index.data(STATUS_DOT_ROLE))
+        name = index.data(Qt.ItemDataRole.DisplayRole) or ""
 
+        # Card background
+        card = QRectF(rect.x() + 4, rect.y() + 2, rect.width() - 8, rect.height() - 4)
         if is_selected:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(BG_ELEVATED))
-            painter.drawRect(rect.x(), rect.y(), rect.width(), rect.height())
+            painter.setBrush(QColor("#313244"))
+            painter.drawRoundedRect(card, 6, 6)
+            # Green left border
             painter.setBrush(QColor(ACCENT))
-            painter.drawRect(rect.x(), rect.y(), 3, rect.height())
+            painter.drawRoundedRect(QRectF(card.x(), card.y(), 2, card.height()), 1, 1)
+        elif is_hovered:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(BG_ELEVATED))
+            painter.drawRoundedRect(card, 6, 6)
 
-        # VM name
-        name = index.data(Qt.ItemDataRole.DisplayRole) or ""
-        if is_selected:
-            painter.setPen(QColor(TEXT_PRIMARY))
-        else:
-            painter.setPen(QColor(TEXT_SECONDARY))
-        painter.setFont(QFont("Inter", 13, QFont.Weight.Bold))
-        name_rect = QRect(rect.x() + 16, rect.y() + 8, rect.width() - 44, 20)
+        # VM name — 12px, weight 400, left aligned, vertically centred
+        lx = card.x() + 12
+        name_w = card.width() - 80
+        painter.setPen(QColor(TEXT_PRIMARY))
+        painter.setFont(QFont("Inter", 12))
         fm = painter.fontMetrics()
-        elided = fm.elidedText(name, Qt.TextElideMode.ElideRight, name_rect.width())
-        painter.drawText(name_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, elided)
+        elided = fm.elidedText(name, Qt.TextElideMode.ElideRight, int(name_w))
+        painter.drawText(QRectF(lx, card.y(), name_w, card.height()),
+                         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, elided)
 
-        # OS/arch subtitle
-        os_label = index.data(OS_LABEL_ROLE) or ""
-        painter.setPen(QColor(TEXT_SECONDARY if is_selected else TEXT_MUTED))
-        painter.setFont(QFont("Inter", 10))
-        os_rect = QRect(rect.x() + 16, rect.y() + 28, rect.width() - 44, 16)
-        painter.drawText(os_rect, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, os_label)
-
-        # Delete cross on hover
-        if is_hovered:
-            cross_x = rect.right() - 24
-            cross_y = rect.center().y()
-            near_cross = self._mouse_x >= rect.right() - 28
-            painter.setPen(QColor("#e74c3c") if near_cross else QColor(TEXT_MUTED))
-            painter.setFont(QFont("Inter", 12, QFont.Weight.Bold))
-            painter.drawText(QRect(cross_x - 6, cross_y - 8, 16, 16),
-                             Qt.AlignmentFlag.AlignCenter, "\u2715")
+        # Status pill — smaller: 9px text, 4px/8px padding
+        pill_text = "RUNNING" if is_running else "STOPPED"
+        pill_bg = "#4caf7d" if is_running else "#313244"
+        pill_fg = "#ffffff"
+        painter.setFont(QFont("Inter", 8, QFont.Weight.Bold))
+        pfm = painter.fontMetrics()
+        pw = pfm.horizontalAdvance(pill_text) + 16
+        ph = 16
+        pill_x = card.right() - pw - 6
+        pill_y = card.y() + (card.height() - ph) / 2
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(pill_bg))
+        painter.drawRoundedRect(QRectF(pill_x, pill_y, pw, ph), 3, 3)
+        painter.setPen(QColor(pill_fg))
+        painter.drawText(QRectF(pill_x, pill_y, pw, ph), Qt.AlignmentFlag.AlignCenter, pill_text)
 
     def sizeHint(self, option, index):
         hint = super().sizeHint(option, index)
-        hint.setHeight(52)
+        hint.setHeight(40)
         return hint
 
 
 class VMListPanel(QFrame):
     vm_selected = Signal(int)
     create_requested = Signal()
+    ai_create_requested = Signal()
+    clone_requested = Signal(int)            # index
     vm_rename_requested = Signal(int, str)   # index, new_name
     vm_delete_requested = Signal(int)        # index
 
@@ -106,7 +129,7 @@ class VMListPanel(QFrame):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        self.setFixedWidth(180)
+        self.setFixedWidth(200)
         self.setStyleSheet(f"background-color: {BG_DEEP}; border: none;")
 
         layout = QVBoxLayout(self)
@@ -120,13 +143,13 @@ class VMListPanel(QFrame):
         logo_layout = QVBoxLayout(logo_widget)
         logo_layout.setContentsMargins(16, 14, 16, 4)
         logo_layout.setSpacing(4)
-        nova_label = QLabel("NOVA")
+        nova_label = QLabel("ICOSELE")
         nova_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         nova_label.setStyleSheet(
-            f"font-size: 24px; font-weight: 900;"
+            f"font-size: 22px; font-weight: 900;"
             f" color: {ACCENT}; letter-spacing: 3px;"
             f" background: transparent;")
-        machine_label = QLabel("MACHINE")
+        machine_label = QLabel("VAULT")
         machine_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         machine_label.setStyleSheet(
             f"font-size: 8px; font-weight: 500;"
@@ -148,14 +171,14 @@ class VMListPanel(QFrame):
             QLineEdit {{
                 background-color: {BG_DEEP};
                 border: 1px solid {BORDER};
-                border-radius: 6px;
-                padding: 6px 10px;
+                border-radius: 8px;
+                padding: 8px 12px;
                 color: {TEXT_PRIMARY};
-                font-size: 11px;
+                font-size: 12px;
                 font-family: {FONT_FAMILY};
                 margin: 10px 14px 6px 14px;
             }}
-            QLineEdit:focus {{ border-color: {ACCENT}; }}
+            QLineEdit:focus {{ border-color: #45475a; }}
         """)
         self._search.textChanged.connect(self._on_search)
         layout.addWidget(self._search)
@@ -163,8 +186,8 @@ class VMListPanel(QFrame):
         # Section
         sec = QLabel("MACHINES")
         sec.setStyleSheet(
-            f"color: {TEXT_MUTED}; font-size: 8px; font-weight: 700;"
-            f" letter-spacing: 2px; background: transparent;"
+            f"color: #4a5568; font-size: 10px; font-weight: 600;"
+            f" letter-spacing: 1.5px; background: transparent;"
             f" padding: 8px 18px 2px 18px;")
         layout.addWidget(sec)
 
@@ -174,6 +197,11 @@ class VMListPanel(QFrame):
             f"color: {TEXT_MUTED}; font-size: 9px; background: transparent;"
             f" padding: 0 18px 8px 18px;")
         layout.addWidget(self._count_label)
+
+        _div2 = QFrame()
+        _div2.setFixedHeight(1)
+        _div2.setStyleSheet("background-color: #313244; border: none; margin: 4px 14px;")
+        layout.addWidget(_div2)
 
         self._no_results = QLabel("No results")
         self._no_results.setStyleSheet(
@@ -185,7 +213,7 @@ class VMListPanel(QFrame):
 
         # VM list
         self.list_widget = QListWidget()
-        self.list_widget.setFixedWidth(180)
+        self.list_widget.setFixedWidth(200)
         self.list_widget.setTextElideMode(Qt.TextElideMode.ElideRight)
         self.list_widget.setWordWrap(False)
         self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -298,10 +326,13 @@ class VMListPanel(QFrame):
             QMenu::item:selected {{ background-color: {BG_ELEVATED}; }}
         """)
         rename_action = menu.addAction("\u270e  Rename")
+        clone_action = menu.addAction("\u2398  Clone")
         delete_action = menu.addAction("\u2717  Delete")
 
         action = menu.exec(self.list_widget.mapToGlobal(pos))
-        if action == rename_action:
+        if action == clone_action:
+            self.clone_requested.emit(idx)
+        elif action == rename_action:
             new_name, ok = QInputDialog.getText(
                 self, "Rename Machine", "New name:", text=name)
             if ok and new_name.strip() and new_name.strip() != name:
@@ -342,3 +373,28 @@ class VMListPanel(QFrame):
             if item is not None:
                 item.setData(STATUS_DOT_ROLE, cfg.vm_id in self._running_ids)
         self.list_widget.viewport().update()
+
+    def update_thumbnail(self, vm_id: str, pixmap: QPixmap | None) -> None:
+        for i, cfg in enumerate(self.configs):
+            if cfg.vm_id == vm_id:
+                item = self.list_widget.item(i)
+                if item is not None:
+                    item.setData(THUMB_ROLE, pixmap)
+                break
+        self.list_widget.viewport().update()
+
+    def update_activity(self, vm_id: str, cpu: float, ram: float, net: float) -> None:
+        for i, cfg in enumerate(self.configs):
+            if cfg.vm_id == vm_id:
+                item = self.list_widget.item(i)
+                if item is not None:
+                    item.setData(CPU_BAR_ROLE, cpu)
+                    item.setData(RAM_BAR_ROLE, ram)
+                    item.setData(NET_BAR_ROLE, net)
+                break
+        self.list_widget.viewport().update()
+
+    def pulse_animation(self) -> None:
+        self._delegate.advance_pulse()
+        if self._running_ids:
+            self.list_widget.viewport().update()

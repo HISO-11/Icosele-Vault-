@@ -55,12 +55,6 @@ class ConsolePanel(QFrame):
 
         layout.addLayout(header)
 
-        # Separator
-        sep = QFrame()
-        sep.setFixedHeight(1)
-        sep.setStyleSheet(f"background-color: {BORDER};")
-        layout.addWidget(sep)
-
         # Content area — placeholder when stopped, display info when running
         self._content = QWidget()
         self._content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)

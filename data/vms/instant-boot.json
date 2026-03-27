@@ -1,0 +1,48 @@
+{
+  "name": "instant boot",
+  "ram_mb": 4096,
+  "cpu_cores": 4,
+  "disk_path": "/home/jl/instant-boot.qcow2",
+  "iso_path": "/home/jl/Downloads/ubuntu-24.04.4-desktop-amd64.iso",
+  "qemu_binary": "/usr/bin/qemu-system-x86_64",
+  "extra_args": [
+    "-machine",
+    "q35"
+  ],
+  "net_mode": "nat",
+  "net_bridge_iface": "",
+  "usb_devices": [],
+  "gpu_passthrough": [],
+  "display_config": {
+    "display_backend": "gtk",
+    "vga_type": "virtio",
+    "vnc_port": 5900,
+    "resolution": ""
+  },
+  "virtio_blk_io_uring": false,
+  "balloon_enabled": false,
+  "balloon_min_mb": 0,
+  "hugepages_enabled": false,
+  "instant_boot": false,
+  "audio_enabled": false,
+  "clipboard_sync": false,
+  "shared_folders": [],
+  "spice_config": {
+    "spice_mode": "default",
+    "spice_port": 5930
+  },
+  "netsim_config": {
+    "bandwidth_mbps": 0,
+    "latency_ms": 0,
+    "loss_pct": 0
+  },
+  "dns_servers": [],
+  "encrypted": false,
+  "firewall_rules": [],
+  "dns_filter_enabled": false,
+  "repo_path": "",
+  "devcontainer_config": {},
+  "port_forwards": [],
+  "usb_remembered_devices": [],
+  "sandbox_mode": false
+}

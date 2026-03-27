@@ -1,0 +1,61 @@
+{
+  "provider": {
+    "name": "icosele_vault",
+    "attributes": {
+      "api_key": {"type": "string", "required": true, "sensitive": true},
+      "host": {"type": "string", "default": "localhost"},
+      "port": {"type": "number", "default": 47820}
+    }
+  },
+  "resources": {
+    "icosele_vault_vm": {
+      "description": "Manages a virtual machine",
+      "attributes": {
+        "name": {"type": "string", "required": true},
+        "ram_mb": {"type": "number", "default": 2048},
+        "cpu_cores": {"type": "number", "default": 2},
+        "disk_gb": {"type": "number", "default": 40},
+        "os_type": {"type": "string", "default": "linux"},
+        "net_mode": {"type": "string", "default": "nat"},
+        "encrypted": {"type": "bool", "default": false}
+      },
+      "computed": ["id", "vm_id", "status", "disk_path"]
+    },
+    "icosele_vault_snapshot": {
+      "description": "Manages a VM snapshot",
+      "attributes": {
+        "vm_id": {"type": "string", "required": true},
+        "name": {"type": "string", "required": true},
+        "tag": {"type": "string", "default": ""}
+      },
+      "computed": ["id", "created_at", "size_mb"]
+    },
+    "icosele_vault_network_policy": {
+      "description": "Manages per-VM firewall rules",
+      "attributes": {
+        "vm_id": {"type": "string", "required": true},
+        "rules": {"type": "list", "required": true}
+      }
+    },
+    "icosele_vault_usb_device": {
+      "description": "Manages USB device passthrough",
+      "attributes": {
+        "vm_id": {"type": "string", "required": true},
+        "vendor_id": {"type": "string", "required": true},
+        "product_id": {"type": "string", "required": true},
+        "auto_connect": {"type": "bool", "default": false}
+      }
+    }
+  },
+  "data_sources": {
+    "icosele_vault_vms": {
+      "description": "List all VMs",
+      "computed": ["vms"]
+    },
+    "icosele_vault_snapshots": {
+      "description": "List snapshots for a VM",
+      "attributes": {"vm_id": {"type": "string", "required": true}},
+      "computed": ["snapshots"]
+    }
+  }
+}

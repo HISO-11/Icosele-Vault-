@@ -1,0 +1,21 @@
+{
+  "name": "icosele-vault",
+  "displayName": "Icosele Vault",
+  "description": "Control Icosele Vault VMs from VSCode",
+  "version": "0.1.0",
+  "publisher": "icosele",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "icosele-vault.listVMs", "title": "Icosele Vault: List VMs" },
+      { "command": "icosele-vault.startVM", "title": "Icosele Vault: Start VM" },
+      { "command": "icosele-vault.stopVM", "title": "Icosele Vault: Stop VM" },
+      { "command": "icosele-vault.takeSnapshot", "title": "Icosele Vault: Take Snapshot" },
+      { "command": "icosele-vault.openDashboard", "title": "Icosele Vault: Open Dashboard" },
+      { "command": "icosele-vault.status", "title": "Icosele Vault: Show Status" }
+    ]
+  }
+}
