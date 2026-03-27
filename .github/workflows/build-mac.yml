@@ -1,0 +1,55 @@
+name: Build macOS App
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+      - name: Build macOS app with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed \
+          --name "IcoseleVault" \
+          --icon assets/icon512.png \
+          --add-data "assets:assets" \
+          --hidden-import PySide6.QtCore \
+          --hidden-import PySide6.QtGui \
+          --hidden-import PySide6.QtWidgets \
+          --hidden-import PySide6.QtNetwork \
+          --hidden-import PySide6.QtOpenGL \
+          main.py
+      - name: Zip the app
+        run: zip -r IcoseleVault-macOS.zip dist/IcoseleVault
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: IcoseleVault-macOS
+          path: IcoseleVault-macOS.zip
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mac-build-${{ steps.sha.outputs.short }}
+          name: macOS Build ${{ steps.sha.outputs.short }}
+          body: |
+            Automated macOS build from commit ${{ github.sha }}.
+            Download IcoseleVault-macOS.zip below.
+            Requires QEMU installed via Homebrew: brew install qemu
+          files: IcoseleVault-macOS.zip
+          draft: false
+          prerelease: true
