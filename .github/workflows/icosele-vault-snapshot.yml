@@ -1,0 +1,34 @@
+# Icosele Vault — Release Snapshot Workflow
+# Captures known-good VM states on push to main or when a GitHub release is created.
+
+name: Icosele Vault Release Snapshot
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [created]
+
+env:
+  VAULT_HOST: localhost
+  VAULT_PORT: 47820
+  # Comma-separated list of VM names to snapshot
+  VM_NAMES: "dev-vm,staging-vm"
+
+jobs:
+  snapshot:
+    runs-on: self-hosted
+    steps:
+      - name: Snapshot all configured VMs
+        run: |
+          IFS=',' read -ra VMS <<< "${{ env.VM_NAMES }}"
+          VERSION="${{ github.event.release.tag_name || github.sha }}"
+          for VM in "${VMS[@]}"; do
+            echo "Snapshotting $VM with tag $VERSION..."
+            curl -s -X POST \
+              -H "Authorization: Bearer ${{ secrets.ICOSELE_VAULT_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\": \"release-${VERSION}\", \"tag\": \"release\"}" \
+              http://${{ env.VAULT_HOST }}:${{ env.VAULT_PORT }}/api/vms/${VM}/snapshot
+            echo "Done: $VM"
+          done

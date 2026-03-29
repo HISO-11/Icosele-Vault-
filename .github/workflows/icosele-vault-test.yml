@@ -1,0 +1,71 @@
+# Icosele Vault — CI Test Workflow
+# Prerequisites:
+# - Icosele Vault running on a self-hosted runner with API enabled
+# - GitHub secret ICOSELE_VAULT_API_KEY set with your API key
+# - VM already created in Icosele Vault with a known name
+
+name: Icosele Vault Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  VAULT_HOST: localhost
+  VAULT_PORT: 47820
+  VM_NAME: test-vm  # Change to your VM name
+
+jobs:
+  vm-test:
+    runs-on: self-hosted
+    steps:
+      # Step 1: Start the VM
+      - name: Start VM
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.ICOSELE_VAULT_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            http://${{ env.VAULT_HOST }}:${{ env.VAULT_PORT }}/api/vms/${{ env.VM_NAME }}/start
+
+      # Step 2: Wait for VM to be running
+      - name: Wait for VM ready
+        run: |
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s \
+              -H "Authorization: Bearer ${{ secrets.ICOSELE_VAULT_API_KEY }}" \
+              http://${{ env.VAULT_HOST }}:${{ env.VAULT_PORT }}/api/vms/${{ env.VM_NAME }}/status \
+              | jq -r '.status')
+            if [ "$STATUS" = "running" ]; then
+              echo "VM is running"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "VM did not start in time"
+          exit 1
+
+      # Step 3: Run tests inside the VM via SSH
+      - name: Run tests
+        run: |
+          echo "TODO: Replace with your test command"
+          echo "ssh -o StrictHostKeyChecking=no user@vm-ip 'cd /project && make test'"
+
+      # Step 4: Snapshot tagged with git SHA
+      - name: Take snapshot
+        if: always()
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.ICOSELE_VAULT_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"name": "ci-${{ github.sha }}", "tag": "ci"}' \
+            http://${{ env.VAULT_HOST }}:${{ env.VAULT_PORT }}/api/vms/${{ env.VM_NAME }}/snapshot
+
+      # Step 5: Stop the VM
+      - name: Stop VM
+        if: always()
+        run: |
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.ICOSELE_VAULT_API_KEY }}" \
+            http://${{ env.VAULT_HOST }}:${{ env.VAULT_PORT }}/api/vms/${{ env.VM_NAME }}/stop
