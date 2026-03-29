@@ -8,10 +8,11 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.theme import (
-    ACCENT, BG_CARD, BG_PANEL, BORDER, COMBO_STYLE, LABEL_STYLE,
-    SECTION_LABEL_STYLE, TEXT_SECONDARY, WARNING, save_btn_style,
+    ACCENT, BG_CARD, BG_PANEL, BORDER, COMBO_STYLE, FONT_FAMILY, LABEL_STYLE,
+    SECTION_LABEL_STYLE, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY, WARNING,
+    save_btn_style,
 )
-from config.vm_config import NET_MODE_BRIDGE, NET_MODE_HOSTONLY, NET_MODE_NAT
+from config.vm_config import NET_MODE_BRIDGE, NET_MODE_HOSTONLY, NET_MODE_NAT, VMConfig
 
 
 def _list_host_interfaces() -> list[str]:
@@ -113,6 +114,14 @@ class NetworkPanel(QFrame):
         br.addWidget(self.btn_save)
         br.addStretch()
         layout.addLayout(br)
+
+        # vhost-net badge
+        layout.addWidget(QLabel("ACCELERATION", styleSheet=SECTION_LABEL_STYLE))
+        self._vhost_badge = QLabel()
+        self._vhost_badge.setFixedHeight(28)
+        self._update_vhost_badge()
+        layout.addWidget(self._vhost_badge)
+
         layout.addStretch()
 
         self.mode_combo.currentIndexChanged.connect(self._on_mode_changed)
@@ -164,6 +173,21 @@ class NetworkPanel(QFrame):
         else:
             a = "-netdev user,id=net0 -device virtio-net-pci,netdev=net0"
         self.args_preview.setText(a)
+
+    def _update_vhost_badge(self) -> None:
+        if VMConfig.vhost_net_available():
+            self._vhost_badge.setText("  vhost-net active  ")
+            self._vhost_badge.setStyleSheet(
+                f"background-color: #1a3328; color: {ACCENT}; border: 1px solid {ACCENT};"
+                f" border-radius: 12px; font-size: 11px; font-weight: 700;"
+                f" padding: 4px 12px; font-family: {FONT_FAMILY};")
+        else:
+            self._vhost_badge.setText("  vhost-net unavailable  ")
+            self._vhost_badge.setStyleSheet(
+                f"background-color: #2a2a2a; color: {TEXT_MUTED}; border: 1px solid {TEXT_MUTED};"
+                f" border-radius: 12px; font-size: 11px; font-weight: 700;"
+                f" padding: 4px 12px; font-family: {FONT_FAMILY};")
+            self._vhost_badge.setToolTip("Run: sudo modprobe vhost_net")
 
     def _on_save(self) -> None:
         self.config_changed.emit(self._current_mode(), self._current_iface())

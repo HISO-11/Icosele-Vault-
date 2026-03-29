@@ -53,6 +53,28 @@ def _check_qemu_version() -> None:
         log.info("qemu-system-x86_64 not found, skipping version check")
 
 
+def _install_desktop_file() -> None:
+    """Copy .desktop file to ~/.local/share/applications/ for Wayland taskbar integration."""
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icosele-vault.desktop")
+    dest_dir = os.path.expanduser("~/.local/share/applications")
+    dest = os.path.join(dest_dir, "icosele-vault.desktop")
+    try:
+        if not os.path.exists(src):
+            return
+        os.makedirs(dest_dir, exist_ok=True)
+        # Only copy if source is newer or dest doesn't exist
+        if not os.path.exists(dest) or os.path.getmtime(src) > os.path.getmtime(dest):
+            import shutil
+            shutil.copy2(src, dest)
+            subprocess.run(
+                ["update-desktop-database", dest_dir],
+                capture_output=True, timeout=5,
+            )
+            log.info("Installed desktop file to %s", dest)
+    except Exception as exc:
+        log.debug("Could not install desktop file: %s", exc)
+
+
 def main() -> None:
     configs = VMConfig.load_all()
     if not configs:
@@ -61,16 +83,23 @@ def main() -> None:
         default.save()
         configs = [default]
 
-    app = QApplication(sys.argv)
-    app.setApplicationName("NovaMachine")
+    _install_desktop_file()
 
-    icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icon.png")
+    app = QApplication(sys.argv)
+    app.setApplicationName("")
+    app.setDesktopFileName("icosele-vault")
+
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.join(app_dir, "assets", "icon.png")
     if os.path.exists(icon_path):
-        app.setWindowIcon(QIcon(icon_path))
+        icon = QIcon(icon_path)
+        app.setWindowIcon(icon)
 
     _check_qemu_version()
 
     window = MainWindow(configs)
+    if os.path.exists(icon_path):
+        window.setWindowIcon(QIcon(icon_path))
     window.show()
 
     sys.exit(app.exec())

@@ -23,6 +23,25 @@ _SCHEMA = {
     "usb_devices": list,
     "gpu_passthrough": list,
     "display_config": dict,
+    "virtio_blk_io_uring": bool,
+    "balloon_enabled": bool,
+    "balloon_min_mb": int,
+    "hugepages_enabled": bool,
+    "instant_boot": bool,
+    "audio_enabled": bool,
+    "clipboard_sync": bool,
+    "shared_folders": list,
+    "spice_config": dict,
+    "netsim_config": dict,
+    "dns_servers": list,
+    "encrypted": bool,
+    "firewall_rules": list,
+    "dns_filter_enabled": bool,
+    "repo_path": str,
+    "devcontainer_config": dict,
+    "port_forwards": list,
+    "usb_remembered_devices": list,
+    "sandbox_mode": bool,
 }
 
 
@@ -66,30 +85,64 @@ class VMConfig:
     gpu_passthrough: list[str] = field(default_factory=list)
     display_config: dict = field(default_factory=lambda: {
         "display_backend": "gtk",
-        "vga_type": "virtio",
+        "vga_type": "std",
         "vnc_port": 5900,
         "resolution": "",
     })
+    virtio_blk_io_uring: bool = False
+    balloon_enabled: bool = False
+    balloon_min_mb: int = 0
+    hugepages_enabled: bool = False
+    instant_boot: bool = False
+    audio_enabled: bool = False
+    clipboard_sync: bool = False
+    shared_folders: list[dict] = field(default_factory=list)
+    spice_config: dict = field(default_factory=lambda: {
+        "spice_mode": "default",
+        "spice_port": 5930,
+    })
+    netsim_config: dict = field(default_factory=lambda: {
+        "bandwidth_mbps": 0,
+        "latency_ms": 0,
+        "loss_pct": 0,
+    })
+    dns_servers: list[str] = field(default_factory=list)
+    encrypted: bool = False
+    firewall_rules: list[dict] = field(default_factory=list)
+    dns_filter_enabled: bool = False
+    repo_path: str = ""
+    devcontainer_config: dict = field(default_factory=dict)
+    port_forwards: list[int] = field(default_factory=list)
+    usb_remembered_devices: list[dict] = field(default_factory=list)
+    sandbox_mode: bool = False
 
     @property
     def vm_id(self) -> str:
         slug = self.name.lower().replace(" ", "-")
         return re.sub(r'[^a-z0-9_\-]', '', slug) or "vm"
 
+    @staticmethod
+    def vhost_net_available() -> bool:
+        return Path("/dev/vhost-net").exists()
+
     def net_args(self) -> list[str]:
+        vhost = ",vhost=on" if self.vhost_net_available() else ""
         if self.net_mode == NET_MODE_BRIDGE:
             iface = self.net_bridge_iface or "br0"
             return [
-                "-netdev", f"bridge,id=net0,br={iface}",
+                "-netdev", f"tap,id=net0,br={iface}{vhost}",
                 "-device", "virtio-net-pci,netdev=net0",
             ]
         if self.net_mode == NET_MODE_HOSTONLY:
             return [
-                "-netdev", "socket,id=net0,listen=:1234",
+                "-netdev", f"socket,id=net0,listen=:1234",
                 "-device", "virtio-net-pci,netdev=net0",
             ]
+        dns_part = ""
+        if self.dns_servers:
+            dns_part = f",dns={self.dns_servers[0]}"
         return [
-            "-netdev", "user,id=net0",
+            "-netdev", f"user,id=net0{dns_part}",
             "-device", "virtio-net-pci,netdev=net0",
         ]
 
@@ -111,7 +164,7 @@ class VMConfig:
     def display_args(self) -> list[str]:
         dc = self.display_config
         backend = dc.get("display_backend", "gtk")
-        vga = dc.get("vga_type", "virtio")
+        vga = dc.get("vga_type", "std")
         args: list[str] = []
 
         if backend == "vnc":
@@ -126,7 +179,6 @@ class VMConfig:
             args += ["-display", backend]
 
         args += ["-vga", vga]
-
         return args
 
     def gpu_args(self) -> list[str]:
@@ -164,14 +216,13 @@ class VMConfig:
             data["disk_path"] = ""
             log.info("Migrated ISO from disk_path to iso_path in %s", path.name)
 
-        # Migrate: fix broken disk_path with appended junk after a space
-        # e.g. "disk.qcow2- ubutnu test.qcow2" -> "disk.qcow2"
-        dp = data.get("disk_path", "")
-        if dp and " " in dp:
-            clean = dp.split(" ")[0].rstrip("-")
-            if clean != dp:
-                log.warning("Fixed broken disk_path in %s: %r -> %r", path.name, dp, clean)
-                data["disk_path"] = clean
+        # Validate paths: clear any disk_path or iso_path that doesn't exist on disk
+        for path_field in ("disk_path", "iso_path"):
+            p = data.get(path_field, "")
+            if p and not Path(p).exists():
+                log.warning("Path does not exist for %s in %s: %r — clearing",
+                            path_field, path.name, p)
+                data[path_field] = ""
 
         return cls(**{k: v for k, v in data.items() if k in _SCHEMA})
 
@@ -182,6 +233,8 @@ class VMConfig:
             return []
         configs = []
         for p in sorted(directory.glob("*.json")):
+            if "_snapshots" in p.name:
+                continue
             try:
                 configs.append(cls.load(p))
             except (json.JSONDecodeError, TypeError, ValueError) as exc:

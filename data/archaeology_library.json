@@ -1,0 +1,98 @@
+[
+  {
+    "name": "MS-DOS 6.22",
+    "year": 1994,
+    "machine": "pc",
+    "ram_mb": 16,
+    "cpu": 1,
+    "display": "std",
+    "notes": "Use freedos.org for legal free image",
+    "extra_args": []
+  },
+  {
+    "name": "Windows 95",
+    "year": 1995,
+    "machine": "pc",
+    "ram_mb": 64,
+    "cpu": 1,
+    "display": "std",
+    "notes": "Requires original licence",
+    "extra_args": [
+      "-no-acpi"
+    ]
+  },
+  {
+    "name": "Windows 98 SE",
+    "year": 1999,
+    "machine": "pc",
+    "ram_mb": 128,
+    "cpu": 1,
+    "display": "std",
+    "notes": "",
+    "extra_args": []
+  },
+  {
+    "name": "Windows XP",
+    "year": 2001,
+    "machine": "pc",
+    "ram_mb": 512,
+    "cpu": 1,
+    "display": "std",
+    "notes": "Requires original licence",
+    "extra_args": []
+  },
+  {
+    "name": "Ubuntu 4.10 Warty",
+    "year": 2004,
+    "machine": "pc",
+    "ram_mb": 256,
+    "cpu": 1,
+    "display": "std",
+    "notes": "",
+    "extra_args": []
+  },
+  {
+    "name": "FreeDOS 1.3",
+    "year": 2022,
+    "machine": "pc",
+    "ram_mb": 64,
+    "cpu": 1,
+    "display": "std",
+    "iso_url": "https://www.freedos.org/download/",
+    "notes": "Free and open source",
+    "extra_args": []
+  },
+  {
+    "name": "ReactOS 0.4",
+    "year": 2023,
+    "machine": "pc",
+    "ram_mb": 512,
+    "cpu": 1,
+    "display": "std",
+    "iso_url": "https://reactos.org/download/",
+    "notes": "Free open-source Windows-compatible OS",
+    "extra_args": []
+  },
+  {
+    "name": "Haiku R1",
+    "year": 2022,
+    "machine": "pc",
+    "ram_mb": 512,
+    "cpu": 2,
+    "display": "std",
+    "iso_url": "https://www.haiku-os.org/get-haiku/",
+    "notes": "Spiritual successor to BeOS",
+    "extra_args": []
+  },
+  {
+    "name": "TempleOS",
+    "year": 2017,
+    "machine": "pc",
+    "ram_mb": 512,
+    "cpu": 1,
+    "display": "std",
+    "iso_url": "https://templeos.org",
+    "notes": "Terry Davis' divine operating system",
+    "extra_args": []
+  }
+]

@@ -1,0 +1,82 @@
+{"timestamp": "2026-03-27T09:18:25.370633+00:00", "action": "test_action", "vm_id": "test-vm", "vm_name": "Test VM", "user": "jl", "details": {"key": "val"}}
+{"timestamp": "2026-03-28T15:51:14.204079+00:00", "action": "vm_created", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:51:17.684244+00:00", "action": "vm_stopped", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:51:17.729293+00:00", "action": "snapshot_create", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {"tag": "auto-20260328-1551", "reason": "AI recommended: Over 24h since last snapshot"}}
+{"timestamp": "2026-03-28T15:51:23.812954+00:00", "action": "vm_deleted", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:51:25.666062+00:00", "action": "vm_deleted", "vm_id": "ubuntu-vm", "vm_name": "ubuntu vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:08.193628+00:00", "action": "vm_created", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:30.481733+00:00", "action": "vm_created", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:32.024523+00:00", "action": "vm_started", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:32.427500+00:00", "action": "vm_stopped", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:32.453232+00:00", "action": "snapshot_create", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {"tag": "auto-20260328-1552", "reason": "AI recommended: Over 24h since last snapshot"}}
+{"timestamp": "2026-03-28T15:52:33.772602+00:00", "action": "vm_started", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:36.769005+00:00", "action": "vm_stopped", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:37.184857+00:00", "action": "vm_stopped", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:41.506802+00:00", "action": "vm_started", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:48.765514+00:00", "action": "vm_stopped", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:49.542850+00:00", "action": "vm_stopped", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:52:51.104774+00:00", "action": "vm_started", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:53:07.580702+00:00", "action": "vm_deleted", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:53:10.094241+00:00", "action": "vm_deleted", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T15:53:12.529771+00:00", "action": "vm_deleted", "vm_id": "ubtunut", "vm_name": "ubtunut", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:05:09.737676+00:00", "action": "vm_created", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:05:15.901298+00:00", "action": "vm_stopped", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:05:25.284712+00:00", "action": "vm_stopped", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:15:49.671822+00:00", "action": "vm_deleted", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:17:39.558689+00:00", "action": "vm_created", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:24:14.284806+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:25:20.273199+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:44:11.633798+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:44:46.712406+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:45:30.035809+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:46:13.318559+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:53:31.797920+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:54:45.260187+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:58:20.623543+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T16:59:10.044136+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:05:26.244620+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:06:32.105382+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:13:45.144993+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:17:42.691045+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:20:43.188520+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:25:12.340061+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:32:35.428859+00:00", "action": "vm_cloned", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {"clone_name": "windows (clone)"}}
+{"timestamp": "2026-03-28T17:33:16.611075+00:00", "action": "vm_created", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:33:21.760008+00:00", "action": "vm_stopped", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:37:28.996136+00:00", "action": "vm_started", "vm_id": "windows-clone", "vm_name": "windows (clone)", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:38:04.632182+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T17:39:17.300595+00:00", "action": "vm_started", "vm_id": "windows-clone", "vm_name": "windows (clone)", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:03:03.687683+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:08:00.378371+00:00", "action": "vm_started", "vm_id": "windows-clone", "vm_name": "windows (clone)", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:11:00.279892+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:12:24.982351+00:00", "action": "vm_started", "vm_id": "windows-clone", "vm_name": "windows (clone)", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:21:53.206749+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:23:38.138970+00:00", "action": "vm_started", "vm_id": "windows-clone", "vm_name": "windows (clone)", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:29:59.227134+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:31:33.765995+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:37:35.726625+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:39:06.433270+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:39:12.567151+00:00", "action": "vm_deleted", "vm_id": "windows-clone", "vm_name": "windows (clone)", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:40:13.178150+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:44:36.635639+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:45:31.627740+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:48:00.706275+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:52:24.114337+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:52:43.642843+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T18:57:07.365292+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:02:58.732851+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:03:13.646274+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:04:23.532938+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:04:30.136139+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:04:32.406213+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:09:03.941229+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:11:06.124032+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:12:11.629851+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:13:21.231649+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:14:52.197291+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:17:23.157056+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:18:51.790678+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:18:52.435771+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:18:53.259705+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:20:22.689693+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-28T19:20:41.037456+00:00", "action": "snapshot_create", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {"snapshot_name": "vm"}}
