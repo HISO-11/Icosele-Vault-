@@ -113,7 +113,7 @@ class ResourceBarWidget(QWidget):
         p.setPen(QColor(TEXT_MUTED))
         p.setFont(QFont("Inter", 8, QFont.Weight.Bold))
         p.drawText(QRectF(4, 0, 100, 14), Qt.AlignmentFlag.AlignLeft, self._title)
-        bar_y, bar_h = 16, h - 20
+        bar_y, bar_h = 16, h - 18
         x = 0.0
         for label, val, color in self._segments:
             seg_w = max((val / self._total) * w, 2)

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import ctypes
 import logging
+import platform
+import sys
 from pathlib import Path
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QKeySequence, QLinearGradient, QPainter, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
@@ -65,6 +68,7 @@ class MainWindow(QMainWindow):
         self.configs = configs
         self._processes: dict[str, QemuProcess] = {}
         self._qmp_conns: dict[str, QMPConnection] = {}
+        self._crash_shown: set[str] = set()
         self._current_vm: VMConfig | None = None
         self._last_cpu_times: dict[str, list[int]] = {}
         self._instant_boot_pending: dict[str, QTimer] = {}
@@ -75,6 +79,7 @@ class MainWindow(QMainWindow):
         self._vm_start_disk_sizes: dict[str, int] = {}
 
         self._build_ui()
+        self._apply_glassmorphism()
         self._connect_signals()
         self._setup_shortcuts()
         self._start_status_timer()
@@ -88,13 +93,126 @@ class MainWindow(QMainWindow):
         if self.configs:
             self._on_vm_selected(0)
 
+    # ── Glassmorphism (platform-specific) ──────────────────────────
+    _GLASS_OS = platform.system()  # "Windows", "Darwin", "Linux"
+
+    def _is_glass_platform(self) -> bool:
+        return self._GLASS_OS in ("Windows", "Darwin")
+
+    def _apply_glassmorphism(self) -> None:
+        """Enable blur-behind on Windows/macOS.  Linux is left untouched."""
+        os_name = self._GLASS_OS
+        if os_name == "Windows":
+            self._apply_glass_windows()
+        elif os_name == "Darwin":
+            self._apply_glass_macos()
+
+    def _apply_glass_windows(self) -> None:
+        """Use DWM Acrylic blur via ctypes (Windows 10 1803+)."""
+        try:
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            hwnd = int(self.winId())
+
+            # --- DwmExtendFrameIntoClientArea (full glass) ---
+            class MARGINS(ctypes.Structure):
+                _fields_ = [("cxLeftWidth", ctypes.c_int),
+                            ("cxRightWidth", ctypes.c_int),
+                            ("cyTopHeight", ctypes.c_int),
+                            ("cyBottomHeight", ctypes.c_int)]
+            margins = MARGINS(-1, -1, -1, -1)
+            ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(hwnd, ctypes.byref(margins))
+
+            # --- SetWindowCompositionAttribute → Acrylic ---
+            class ACCENT_POLICY(ctypes.Structure):
+                _fields_ = [("AccentState", ctypes.c_int),
+                            ("AccentFlags", ctypes.c_int),
+                            ("GradientColor", ctypes.c_uint),
+                            ("AnimationId", ctypes.c_int)]
+            class WINCOMP_ATTR_DATA(ctypes.Structure):
+                _fields_ = [("Attribute", ctypes.c_int),
+                            ("Data", ctypes.POINTER(ACCENT_POLICY)),
+                            ("SizeOfData", ctypes.c_uint)]
+
+            ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
+            # GradientColor: ABGR  – dark tint at ~70 % opacity
+            accent = ACCENT_POLICY(ACCENT_ENABLE_ACRYLICBLURBEHIND, 2, 0xB3190F0F, 0)
+            data = WINCOMP_ATTR_DATA(19, ctypes.pointer(accent), ctypes.sizeof(accent))
+            ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
+            log.info("Glassmorphism: Windows Acrylic blur enabled")
+        except Exception as exc:
+            log.warning("Glassmorphism: Windows blur failed (%s), falling back to solid bg", exc)
+
+    def _apply_glass_macos(self) -> None:
+        """Use NSVisualEffectView via ctypes/objc_msgSend (macOS 10.14+)."""
+        try:
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            objc = ctypes.cdll.LoadLibrary("/usr/lib/libobjc.dylib")
+            objc.objc_getClass.restype = ctypes.c_void_p
+            objc.sel_registerName.restype = ctypes.c_void_p
+            objc.objc_msgSend.restype = ctypes.c_void_p
+            objc.objc_msgSend.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+
+            NSApp = objc.objc_msgSend(
+                objc.objc_getClass(b"NSApplication"),
+                objc.sel_registerName(b"sharedApplication"))
+            # Get the NSWindow backing this QWidget
+            view_ptr = int(self.winId())
+
+            # Use the Cocoa windowNumber approach via effectiveAppearance
+            # Simpler: access the NSView, get its window, set appearance
+            send = objc.objc_msgSend
+            send3 = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p,
+                                     ctypes.c_void_p, ctypes.c_long)
+            sel = objc.sel_registerName
+
+            # Create NSVisualEffectView
+            VEVClass = objc.objc_getClass(b"NSVisualEffectView")
+            alloc_sel = sel(b"alloc")
+            init_sel = sel(b"initWithFrame:")
+            vev = send(VEVClass, alloc_sel)
+
+            # Set material = NSVisualEffectMaterialDark (4) and
+            # blendingMode = NSVisualEffectBlendingModeBehindWindow (0)
+            set_material = ctypes.CFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
+            set_material(send)(vev, sel(b"setMaterial:"), 4)
+            set_blending = ctypes.CFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
+            set_blending(send)(vev, sel(b"setBlendingMode:"), 0)
+            set_state = ctypes.CFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
+            set_state(send)(vev, sel(b"setState:"), 1)  # active
+
+            # Insert as the bottom-most subview of the NSWindow contentView
+            nsview = ctypes.c_void_p(view_ptr)
+            nswindow = send(nsview, sel(b"window"))
+            content_view = send(nswindow, sel(b"contentView"))
+            add_sub = ctypes.CFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
+            add_sub(send)(content_view, sel(b"addSubview:positioned:relativeTo:"), vev, 0, None)
+
+            log.info("Glassmorphism: macOS NSVisualEffectView enabled")
+        except Exception as exc:
+            log.warning("Glassmorphism: macOS blur failed (%s), falling back to solid bg", exc)
+
     def _build_ui(self) -> None:
         self.setWindowTitle("Icosele Vault")
         self.setMinimumSize(1200, 700)
+
+        glass = self._is_glass_platform()
+        # On glass platforms use semi-transparent backgrounds
+        if glass:
+            main_bg = "background: rgba(15,15,25,0.7)"
+            panel_bg = "rgba(255,255,255,0.05)"
+        else:
+            main_bg = ("background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+                        " stop:0 #0d0d1a, stop:1 #0a0a14)")
+            panel_bg = None  # keep existing theme colours
+
         self.setStyleSheet(
             f"* {{ font-family: {FONT_FAMILY}; }}"
-            f" QMainWindow {{ background-color: {BG_PANEL}; color: {TEXT_PRIMARY}; }}"
-            f" QFrame {{ background-color: {BG_PANEL}; border: none; }}"
+            f" QMainWindow {{ {main_bg}; color: {TEXT_PRIMARY}; }}"
+            f" QFrame {{ background: transparent; border: none; }}"
             f" QLabel {{ color: {TEXT_PRIMARY}; background: transparent; }}"
             f" QLineEdit {{ color: {TEXT_PRIMARY}; }}"
             f" QScrollBar:vertical {{ width: 4px; background: transparent; border: none; }}"
@@ -103,7 +221,9 @@ class MainWindow(QMainWindow):
             f" QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: transparent; }}"
             f" QScrollBar:horizontal {{ height: 4px; background: transparent; border: none; }}"
             f" QScrollBar::handle:horizontal {{ background: #546058; border-radius: 2px; }}"
-            f" QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}")
+            f" QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}"
+            + (f" QGroupBox, #SidebarPanel, #StatCard {{ background: {panel_bg}; }}"
+               if panel_bg else ""))
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -640,6 +760,7 @@ class MainWindow(QMainWindow):
         cfg = self._current_vm
         if not cfg:
             return
+        self._crash_shown.discard(cfg.vm_id)
         if not kvm_available() and not getattr(self, '_kvm_warned', False):
             self._kvm_warned = True
             QMessageBox.warning(
@@ -1053,6 +1174,8 @@ class MainWindow(QMainWindow):
             pix = QPixmap(thumb_path)
             if not pix.isNull():
                 self.vm_list.update_thumbnail(cfg.vm_id, pix)
+                if self._current_vm and cfg.vm_id == self._current_vm.vm_id:
+                    self.vm_controls.display_preview_tab.set_thumbnail(pix)
             # Activity bars
             try:
                 cpus_resp = qmp.query_cpus_fast().get("return", [])
@@ -1395,9 +1518,11 @@ class MainWindow(QMainWindow):
         vm_id = self._current_vm.vm_id
         proc = self._processes.get(vm_id)
         if not proc or proc.refresh_state() != ProcessState.RUNNING:
-            # Check for crash (non-zero exit code)
+            # Check for crash (non-zero exit code) — show popup only once
             if proc and proc.exit_code is not None and proc.exit_code != 0:
-                self._handle_crash(self._current_vm, proc.exit_code)
+                if vm_id not in self._crash_shown:
+                    self._crash_shown.add(vm_id)
+                    self._handle_crash(self._current_vm, proc.exit_code)
             qmp = self._qmp_conns.pop(vm_id, None)
             if qmp:
                 qmp.disconnect()

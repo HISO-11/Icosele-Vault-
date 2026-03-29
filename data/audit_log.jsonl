@@ -80,3 +80,24 @@
 {"timestamp": "2026-03-28T19:18:53.259705+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
 {"timestamp": "2026-03-28T19:20:22.689693+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
 {"timestamp": "2026-03-28T19:20:41.037456+00:00", "action": "snapshot_create", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {"snapshot_name": "vm"}}
+{"timestamp": "2026-03-29T11:18:03.125380+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-29T11:29:38.526472+00:00", "action": "vm_deleted", "vm_id": "test-vm", "vm_name": "test-vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-29T11:30:52.005980+00:00", "action": "vm_created", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-29T11:30:55.192863+00:00", "action": "vm_started", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-29T11:43:52.924677+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-29T11:44:09.109349+00:00", "action": "vm_started", "vm_id": "windows", "vm_name": "windows", "user": "jl", "details": {}}
+{"timestamp": "2026-03-29T12:12:06.530360+00:00", "action": "vm_started", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {}}
+{"timestamp": "2026-03-29T12:13:23.483631+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131323"}}
+{"timestamp": "2026-03-29T12:13:27.456326+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131327"}}
+{"timestamp": "2026-03-29T12:13:51.455919+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131351"}}
+{"timestamp": "2026-03-29T12:13:53.456307+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131353"}}
+{"timestamp": "2026-03-29T12:13:57.455986+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131357"}}
+{"timestamp": "2026-03-29T12:13:59.457191+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131359"}}
+{"timestamp": "2026-03-29T12:14:01.456357+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131401"}}
+{"timestamp": "2026-03-29T12:14:03.456003+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131403"}}
+{"timestamp": "2026-03-29T12:14:05.479713+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131405"}}
+{"timestamp": "2026-03-29T12:14:07.456392+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131407"}}
+{"timestamp": "2026-03-29T12:14:09.457033+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131409"}}
+{"timestamp": "2026-03-29T12:14:19.456990+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131419"}}
+{"timestamp": "2026-03-29T12:17:35.475667+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131735"}}
+{"timestamp": "2026-03-29T12:17:37.456396+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131737"}}

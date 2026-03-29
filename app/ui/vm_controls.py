@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QCursor, QFontMetrics
+from PySide6.QtGui import QColor, QCursor, QFontMetrics
 from PySide6.QtWidgets import (
     QComboBox, QDialog, QFormLayout, QFrame, QGridLayout, QHBoxLayout,
     QInputDialog, QLabel, QLineEdit, QPushButton, QSizePolicy, QSpinBox,
@@ -96,26 +96,24 @@ class InfoCard(QFrame):
         self._max_val = max_val
         self._current_int: int = 0
 
-        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
-        self.setStyleSheet(f"""
-            InfoCard {{
-                background-color: {BG_CARD};
-                border: none;
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.setStyleSheet("""
+            InfoCard {
+                background-color: rgba(255,255,255,0.04);
+                border: 1px solid rgba(255,255,255,0.08);
                 border-radius: 10px;
-            }}
+            }
         """)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(20, 24, 20, 24)
+        layout.setContentsMargins(12, 20, 12, 20)
         layout.setSpacing(0)
-
-        layout.addStretch(2)
 
         self._label = QLabel(label.upper())
         self._label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self._label.setStyleSheet(
-            f"color: {TEXT_SECONDARY}; font-size: 10px; font-weight: 700;"
-            f" letter-spacing: 2px; background: transparent;"
+            f"color: #F47B1F; font-size: 11px; font-weight: 700;"
+            f" letter-spacing: 1.5px; background: transparent;"
             f" font-family: {FONT_FAMILY};")
 
         # Value row: optional [-] value [+]
@@ -153,16 +151,23 @@ class InfoCard(QFrame):
 
         self._subtitle = QLabel("")
         self._subtitle.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self._subtitle.setMinimumHeight(16)
         self._subtitle.setStyleSheet(
-            f"color: {_SUBLABEL}; font-size: 11px; background: transparent;"
+            f"color: {_SUBLABEL}; font-size: 10px; background: transparent;"
+            f" font-family: {FONT_FAMILY};")
+
+        self._secondary = QLabel("")
+        self._secondary.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self._secondary.setStyleSheet(
+            f"color: rgba(255,255,255,0.45); font-size: 9px; background: transparent;"
             f" font-family: {FONT_FAMILY};")
 
         layout.addWidget(self._label)
-        layout.addSpacing(6)
+        layout.addSpacing(2)
         layout.addLayout(value_row)
-        layout.addSpacing(4)
+        layout.addSpacing(2)
         layout.addWidget(self._subtitle)
+        layout.addSpacing(0)
+        layout.addWidget(self._secondary)
 
         if show_separator:
             sep_row = QHBoxLayout()
@@ -176,15 +181,14 @@ class InfoCard(QFrame):
             sep_row.addStretch(2)
             layout.addLayout(sep_row)
 
-        layout.addStretch(2)
-
         self.setLayout(layout)
 
         if not editable:
             self._btn_minus.hide()
             self._btn_plus.hide()
 
-    def set_value(self, text: str, unit: str = "", subtitle: str = "") -> None:
+    def set_value(self, text: str, unit: str = "", subtitle: str = "",
+                  secondary: str = "") -> None:
         try:
             self._current_int = int(text)
         except (ValueError, TypeError):
@@ -201,12 +205,13 @@ class InfoCard(QFrame):
 
         if unit:
             self._value.setText(
-                f'<span style="font-size:36px; font-weight:900">{display_text}</span>'
-                f' <span style="font-size:16px; font-weight:500; color:{TEXT_SECONDARY}">{unit}</span>')
+                f'<span style="font-size:28px; font-weight:900">{display_text}</span>'
+                f' <span style="font-size:13px; font-weight:500; color:{TEXT_SECONDARY}">{unit}</span>')
         else:
             self._value.setText(
-                f'<span style="font-size:36px; font-weight:900">{display_text}</span>')
+                f'<span style="font-size:28px; font-weight:900">{display_text}</span>')
         self._subtitle.setText(subtitle)
+        self._secondary.setText(secondary)
 
     def set_editable_visible(self, visible: bool) -> None:
         if not self._editable:
@@ -230,24 +235,37 @@ class InfoCard(QFrame):
 class StatusBadge(QLabel):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
+        self.setObjectName("StatusBadge")
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setFixedHeight(26)
+        print(f"[StatusBadge] objectName={self.objectName()!r} class={type(self).__name__}")
         self.set_status("stopped")
 
     def set_status(self, status: str) -> None:
         if status == "running":
-            label, bg, fg = "RUNNING", "rgba(166,227,161,0.2)", "#a6e3a1"
+            label = "RUNNING"
+            bg, fg, border = "rgba(29,158,117,0.15)", "#1D9E75", "#1D9E75"
         elif status == "paused":
-            label, bg, fg = "PAUSED", "rgba(249,226,175,0.2)", "#f9e2af"
+            label = "PAUSED"
+            bg, fg, border = "rgba(249,226,175,0.15)", "#f9e2af", "rgba(249,226,175,0.40)"
         else:
-            label, bg, fg = "STOPPED", "#45475a", "#ffffff"
+            label = "STOPPED"
+            bg, fg, border = "rgba(100,100,100,0.15)", "#666", "#666"
         self.setText(label)
         self.setStyleSheet(
-            f"color: {fg}; background-color: {bg};"
-            f" border: none; border-radius: 6px; font-weight: 700;"
-            f" padding: 4px 8px; font-size: 11px; letter-spacing: 1px;"
-            f" font-family: {FONT_FAMILY};")
+            f"QLabel#StatusBadge {{"
+            f" color: {fg};"
+            f" background-color: {bg};"
+            f" border: 1px solid {border};"
+            f" border-radius: 10px;"
+            f" font-weight: 700;"
+            f" padding: 4px 16px;"
+            f" font-size: 11px;"
+            f" letter-spacing: 1px;"
+            f" font-family: {FONT_FAMILY};"
+            f"}}")
         self.setFixedHeight(26)
-        self.setFixedWidth(self.fontMetrics().horizontalAdvance(label) + 24)
+        self.setFixedWidth(self.fontMetrics().horizontalAdvance(label) + 40)
 
 
 class OverviewTab(QWidget):
@@ -256,26 +274,23 @@ class OverviewTab(QWidget):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setStyleSheet(f"background-color: {BG_PANEL};")
+        self.setStyleSheet("background: transparent;")
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 16, 0, 0)
-        layout.setSpacing(12)
+        layout.setContentsMargins(0, 12, 0, 0)
+        layout.setSpacing(8)
 
-        # 2x2 card grid — generous spacing, minimum 200px card height
+        # 2x2 card grid — compact, dense
         card_w = QWidget()
         card_w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         grid = QGridLayout(card_w)
-        grid.setSpacing(12)
+        grid.setSpacing(8)
         grid.setContentsMargins(0, 0, 0, 0)
 
         self.card_cpu = InfoCard("CPU Cores", editable=True, step=1, min_val=1, max_val=32)
         self.card_ram = InfoCard("Memory", editable=True, step=1024, min_val=1024, max_val=32768)
         self.card_disk = InfoCard("Storage")
         self.card_net = InfoCard("Network")
-
-        for c in (self.card_cpu, self.card_ram, self.card_disk, self.card_net):
-            c.setMinimumHeight(200)
 
         grid.addWidget(self.card_cpu, 0, 0)
         grid.addWidget(self.card_ram, 0, 1)
@@ -288,38 +303,49 @@ class OverviewTab(QWidget):
 
         layout.addWidget(card_w, 1)
 
-        # Action buttons — solid colours, 56px tall, no gradients
+        # Action buttons — translucent frosted glass, pill-shaped
         btn_row = QWidget()
+        btn_row.setStyleSheet(
+            "QWidget { background: rgba(255,255,255,0.03);"
+            " border-top: 1px solid rgba(255,255,255,0.06); }")
         btn_row_layout = QHBoxLayout(btn_row)
-        btn_row_layout.setContentsMargins(0, 0, 0, 0)
-        btn_row_layout.setSpacing(12)
+        btn_row_layout.setContentsMargins(0, 10, 0, 0)
+        btn_row_layout.setSpacing(10)
 
         self.btn_new = QPushButton("+ NEW MACHINE")
         self.btn_start = QPushButton("\u25b6 START")
         self.btn_stop = QPushButton("\u25a0 STOP")
         self.btn_pause = QPushButton("\u23f8 PAUSE")
 
+        # Frosted glass base style shared by all buttons — pill shape
+        _glass_base = (
+            f"border-radius: 12px; font-size: 13px; font-weight: 800;"
+            f" min-height: 44px; font-family: {FONT_FAMILY};"
+        )
+
         self.btn_new.setStyleSheet(
-            f"QPushButton {{ background-color: #313244; color: #ffffff;"
-            f" border: none; border-radius: 8px;"
-            f" font-size: 14px; font-weight: 800;"
-            f" min-height: 52px; font-family: {FONT_FAMILY}; }}"
-            f"QPushButton:hover {{ background-color: #45475a; }}")
+            f"QPushButton {{ background-color: rgba(31,184,244,0.15); color: #1FB8F4;"
+            f" border: 1px solid rgba(31,184,244,0.30); {_glass_base} }}"
+            f"QPushButton:hover {{ background-color: rgba(31,184,244,0.28);"
+            f" border: 1px solid rgba(31,184,244,0.50); }}")
         self.btn_start.setStyleSheet(
-            f"QPushButton {{ background-color: #4caf7d; color: #ffffff; border: none;"
-            f" border-radius: 8px; font-size: 14px; font-weight: 800;"
-            f" min-height: 52px; font-family: {FONT_FAMILY}; }}")
+            f"QPushButton {{ background-color: rgba(76,175,125,0.18); color: #a6e3a1;"
+            f" border: 1px solid rgba(76,175,125,0.30); {_glass_base} }}"
+            f"QPushButton:hover {{ background-color: rgba(76,175,125,0.30);"
+            f" border: 1px solid rgba(76,175,125,0.45); }}")
         self.btn_stop.setStyleSheet(
-            f"QPushButton {{ background-color: #ff3b30; color: #ffffff; border: none;"
-            f" border-radius: 8px; font-size: 14px; font-weight: 800;"
-            f" min-height: 52px; font-family: {FONT_FAMILY}; }}")
+            f"QPushButton {{ background-color: rgba(255,59,48,0.18); color: #f38ba8;"
+            f" border: 1px solid rgba(255,59,48,0.30); {_glass_base} }}"
+            f"QPushButton:hover {{ background-color: rgba(255,59,48,0.30);"
+            f" border: 1px solid rgba(255,59,48,0.45); }}")
         self.btn_pause.setStyleSheet(
-            f"QPushButton {{ background-color: #f47b1f; color: #ffffff; border: none;"
-            f" border-radius: 8px; font-size: 14px; font-weight: 800;"
-            f" min-height: 52px; font-family: {FONT_FAMILY}; }}")
+            f"QPushButton {{ background-color: rgba(244,123,31,0.18); color: #fab387;"
+            f" border: 1px solid rgba(244,123,31,0.30); {_glass_base} }}"
+            f"QPushButton:hover {{ background-color: rgba(244,123,31,0.30);"
+            f" border: 1px solid rgba(244,123,31,0.45); }}")
 
         for btn in [self.btn_new, self.btn_start, self.btn_stop, self.btn_pause]:
-            btn.setFixedHeight(56)
+            btn.setFixedHeight(48)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
@@ -331,6 +357,94 @@ class OverviewTab(QWidget):
         btn_row_layout.addWidget(self.btn_pause)
 
         layout.addWidget(btn_row)
+
+
+
+class DisplayPreviewTab(QWidget):
+    """Tab showing the live VM display preview."""
+
+    # Simple monitor icon as SVG — rectangle with a stand, no fonts/images
+    _MONITOR_SVG = (
+        '<svg width="64" height="56" viewBox="0 0 64 56" xmlns="http://www.w3.org/2000/svg">'
+        '<rect x="4" y="2" width="56" height="38" rx="4" fill="none" '
+        'stroke="#585b70" stroke-width="2"/>'
+        '<rect x="8" y="6" width="48" height="30" rx="2" fill="#1a1d1c"/>'
+        '<rect x="26" y="42" width="12" height="6" fill="#585b70"/>'
+        '<rect x="20" y="48" width="24" height="3" rx="1.5" fill="#585b70"/>'
+        '</svg>'
+    )
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setStyleSheet("background: transparent;")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Live display image — fills the tab when active
+        self._thumb_label = QLabel()
+        self._thumb_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._thumb_label.setStyleSheet(
+            "background-color: rgba(255,255,255,0.02); border: none;")
+        layout.addWidget(self._thumb_label, 1)
+
+        # Inactive placeholder — centred icon + text, shown when VM is off
+        self._placeholder = QWidget()
+        self._placeholder.setStyleSheet("background: transparent;")
+        ph_lay = QVBoxLayout(self._placeholder)
+        ph_lay.setContentsMargins(0, 0, 0, 0)
+        ph_lay.setSpacing(12)
+        ph_lay.addStretch(1)
+
+        from PySide6.QtSvg import QSvgRenderer
+        from PySide6.QtGui import QPixmap, QPainter as _QPainter
+        renderer = QSvgRenderer(bytearray(self._MONITOR_SVG.encode()))
+        icon_pix = QPixmap(64, 56)
+        icon_pix.fill(QColor(0, 0, 0, 0))
+        p = _QPainter(icon_pix)
+        renderer.render(p)
+        p.end()
+        icon_label = QLabel()
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        icon_label.setPixmap(icon_pix)
+        icon_label.setStyleSheet("background: transparent;")
+        ph_lay.addWidget(icon_label)
+
+        text_label = QLabel("Display inactive")
+        text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        text_label.setStyleSheet(
+            f"color: {TEXT_MUTED}; font-size: 18px; font-weight: 400;"
+            f" background: transparent; font-family: {FONT_FAMILY};")
+        ph_lay.addWidget(text_label)
+
+        hint_label = QLabel("Start the VM to view display output")
+        hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        hint_label.setStyleSheet(
+            f"color: #45475a; font-size: 11px; background: transparent;"
+            f" font-family: {FONT_FAMILY};")
+        ph_lay.addWidget(hint_label)
+
+        ph_lay.addStretch(1)
+        layout.addWidget(self._placeholder, 1)
+
+        self.set_thumbnail(None)
+
+    def set_thumbnail(self, pixmap) -> None:
+        """Update the live thumbnail preview. None = stopped/inactive."""
+        if pixmap and not pixmap.isNull():
+            scaled = pixmap.scaled(
+                max(self._thumb_label.width(), 200),
+                max(self._thumb_label.height(), 200),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation)
+            self._thumb_label.setPixmap(scaled)
+            self._thumb_label.show()
+            self._placeholder.hide()
+        else:
+            self._thumb_label.clear()
+            self._thumb_label.hide()
+            self._placeholder.show()
 
 
 class VMEditDialog(QDialog):
@@ -466,7 +580,7 @@ class VMControlPanel(QFrame):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        self.setStyleSheet(f"background-color: {BG_PANEL}; border: none;")
+        self.setStyleSheet("background: transparent; border: none;")
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(40, 28, 40, 24)
@@ -478,8 +592,8 @@ class VMControlPanel(QFrame):
 
         self.name_label = ClickableLabel("No VM selected")
         self.name_label.setStyleSheet(
-            f"color: {TEXT_PRIMARY}; font-size: 42px; font-weight: 900;"
-            f" letter-spacing: -1px; background: transparent;"
+            f"color: {TEXT_PRIMARY}; font-size: 32px; font-weight: 200;"
+            f" letter-spacing: -0.5px; background: transparent;"
             f" font-family: {FONT_FAMILY};")
         self.name_label.double_clicked.connect(self.edit_requested.emit)
 
@@ -507,7 +621,7 @@ class VMControlPanel(QFrame):
         divider = QFrame()
         divider.setFrameShape(QFrame.Shape.HLine)
         divider.setFixedHeight(1)
-        divider.setStyleSheet(f"background-color: #2a3545; border: none;")
+        divider.setStyleSheet("background-color: rgba(255,255,255,0.06); border: none;")
         outer.addWidget(divider)
 
         # ── Main 5 tabs: Overview | Console | Snapshots | AI Assistant | cog ──
@@ -515,25 +629,30 @@ class VMControlPanel(QFrame):
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
         self.tabs.setStyleSheet(f"""
-            QTabWidget {{ border: none; }}
-            QTabWidget::pane {{ border: none; margin: 0; padding: 0; background-color: {BG_PANEL}; }}
+            QTabWidget {{ border: none; background: transparent; }}
+            QTabWidget::pane {{
+                border: none; border-top: 1px solid rgba(255,255,255,0.06);
+                margin: 0; padding: 0; background: transparent;
+            }}
             QTabBar {{ border: none; background: transparent; }}
             QTabBar::tab {{
-                background: transparent; color: #6c7086;
-                border: none;
+                background: transparent; color: #585b70;
+                border: none; border-bottom: 2px solid transparent;
                 padding: 14px 32px; font-size: 13px; font-weight: 500;
                 font-family: {FONT_FAMILY}; margin: 0;
             }}
             QTabBar::tab:selected {{
                 color: {TEXT_PRIMARY}; font-weight: 600;
+                border-bottom: 2px solid #F47B1F;
             }}
             QTabBar::tab:hover:!selected {{
-                color: #8a9e90;
+                color: #7f849c;
             }}
         """)
 
         # Create all panels (keep references for signal wiring)
         self.overview_tab = OverviewTab()
+        self.display_preview_tab = DisplayPreviewTab()
         self.console_panel = ConsolePanel()
         self.perf_panel = PerformancePanel()
         self.network_panel = NetworkPanel()
@@ -664,9 +783,10 @@ class VMControlPanel(QFrame):
 
         sp_outer.addWidget(self._settings_stack, 1)
 
-        # Main 5 tabs
+        # Main tabs
         self.tabs.addTab(self.overview_tab, "Overview")
         self.tabs.addTab(self.console_panel, "Console")
+        self.tabs.addTab(self.display_preview_tab, "Display")
         self.tabs.addTab(self.snap_dag_panel, "Snapshots")
         self.tabs.addTab(self.ai_assistant, "AI Assistant")
         self.tabs.addTab(self._settings_page, "\u2699")
@@ -706,9 +826,11 @@ class VMControlPanel(QFrame):
         if w:
             w.setWindowTitle("Icosele Vault")
         self.overview_tab.card_cpu.set_value(
-            str(cpus), "vCPU" + ("s" if cpus != 1 else ""), "KVM accelerated")
+            str(cpus), "vCPU" + ("s" if cpus != 1 else ""), "KVM accelerated",
+            secondary="x86_64 architecture")
         self.overview_tab.card_ram.set_value(
-            str(ram), "MB", "Allocated RAM")
+            str(ram), "MB", "Allocated RAM",
+            secondary="DDR4 virtual memory")
 
         if disk:
             import subprocess, json as _json
@@ -725,13 +847,18 @@ class VMControlPanel(QFrame):
                     size_sub = f"{vsize / (1024**3):.1f} GB"
             except Exception:
                 pass
-            self.overview_tab.card_disk.set_value(fmt, "", size_sub or os.path.basename(disk)[:20])
+            disk_filename = os.path.basename(disk)[:24]
+            self.overview_tab.card_disk.set_value(
+                fmt, "", size_sub or disk_filename,
+                secondary=disk_filename if size_sub else "")
         else:
             self.overview_tab.card_disk.set_value(
                 "No disk", "", "Edit VM to attach a disk")
 
         net_label = {"nat": "NAT", "bridge": "Bridged", "hostonly": "Host-only"}.get(net_mode, "NAT")
-        self.overview_tab.card_net.set_value(net_label, "", "virtio-net")
+        self.overview_tab.card_net.set_value(
+            net_label, "", "virtio-net",
+            secondary=f"{net_mode or 'nat'} mode")
         self.perf_panel.set_ram_max(float(ram))
 
     def set_buttons_for_state(self, status: str) -> None:
@@ -746,6 +873,8 @@ class VMControlPanel(QFrame):
 
         self.overview_tab.card_ram.set_editable_visible(is_stopped)
         self.overview_tab.card_cpu.set_editable_visible(is_stopped)
+        if is_stopped:
+            self.display_preview_tab.set_thumbnail(None)
 
         self.status_badge.set_status(status if status else "stopped")
         self.console_panel.set_status(status if status else "stopped")

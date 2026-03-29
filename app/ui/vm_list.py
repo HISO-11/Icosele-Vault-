@@ -72,19 +72,19 @@ class VMItemDelegate(QStyledItemDelegate):
         card = QRectF(rect.x() + 4, rect.y() + 2, rect.width() - 8, rect.height() - 4)
         if is_selected:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#313244"))
+            painter.setBrush(QColor(244, 123, 31, 20))  # rgba(244,123,31,0.08)
             painter.drawRoundedRect(card, 6, 6)
-            # Green left border
-            painter.setBrush(QColor(ACCENT))
-            painter.drawRoundedRect(QRectF(card.x(), card.y(), 2, card.height()), 1, 1)
+            # Orange left border accent — 3px solid
+            painter.setBrush(QColor("#F47B1F"))
+            painter.drawRoundedRect(QRectF(card.x(), card.y() + 3, 3, card.height() - 6), 1.5, 1.5)
         elif is_hovered:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(BG_ELEVATED))
+            painter.setBrush(QColor(255, 255, 255, 8))
             painter.drawRoundedRect(card, 6, 6)
 
         # VM name — 12px, weight 400, left aligned, vertically centred
         lx = card.x() + 12
-        name_w = card.width() - 80
+        name_w = card.width() - 36
         painter.setPen(QColor(TEXT_PRIMARY))
         painter.setFont(QFont("Inter", 12))
         fm = painter.fontMetrics()
@@ -92,21 +92,14 @@ class VMItemDelegate(QStyledItemDelegate):
         painter.drawText(QRectF(lx, card.y(), name_w, card.height()),
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, elided)
 
-        # Status pill — smaller: 9px text, 4px/8px padding
-        pill_text = "RUNNING" if is_running else "STOPPED"
-        pill_bg = "#4caf7d" if is_running else "#313244"
-        pill_fg = "#ffffff"
-        painter.setFont(QFont("Inter", 8, QFont.Weight.Bold))
-        pfm = painter.fontMetrics()
-        pw = pfm.horizontalAdvance(pill_text) + 16
-        ph = 16
-        pill_x = card.right() - pw - 6
-        pill_y = card.y() + (card.height() - ph) / 2
+        # Status dot — small coloured circle
+        dot_r = 4
+        dot_color = "#a6e3a1" if is_running else "#f38ba8"
+        dot_x = card.right() - dot_r * 2 - 10
+        dot_y = card.y() + (card.height() - dot_r * 2) / 2
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(pill_bg))
-        painter.drawRoundedRect(QRectF(pill_x, pill_y, pw, ph), 3, 3)
-        painter.setPen(QColor(pill_fg))
-        painter.drawText(QRectF(pill_x, pill_y, pw, ph), Qt.AlignmentFlag.AlignCenter, pill_text)
+        painter.setBrush(QColor(dot_color))
+        painter.drawEllipse(QRectF(dot_x, dot_y, dot_r * 2, dot_r * 2))
 
     def sizeHint(self, option, index):
         hint = super().sizeHint(option, index)
@@ -130,7 +123,10 @@ class VMListPanel(QFrame):
 
     def _build_ui(self) -> None:
         self.setFixedWidth(200)
-        self.setStyleSheet(f"background-color: {BG_DEEP}; border: none;")
+        self.setStyleSheet(
+            "background-color: rgba(255,255,255,0.02);"
+            " border: none;"
+            " border-right: 1px solid rgba(255,255,255,0.06);")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 14)
