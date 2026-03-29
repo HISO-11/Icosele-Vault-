@@ -36,5 +36,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IcoseleVault-macOS
+          name: Icosele Vault macOS
           path: dist/IcoseleVault-macOS.zip
