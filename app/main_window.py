@@ -143,92 +143,21 @@ class MainWindow(QMainWindow):
             log.warning("Glassmorphism: Windows blur failed (%s), falling back to solid bg", exc)
 
     def _apply_glass_macos(self) -> None:
-        """Use NSVisualEffectView via ctypes/objc_msgSend (macOS 10.14+).
+        """macOS glassmorphism via WA_TranslucentBackground only.
 
-        Every objc call is guarded individually so a single failure
-        aborts early without segfaulting the process.
+        Raw objc_msgSend calls to inject NSVisualEffectView are not safe
+        via ctypes — ABI mismatches on ARM64 cause SIGABRT (exit 134)
+        which Python cannot catch.  Instead we just make the window
+        translucent and let the semi-transparent stylesheets provide
+        the frosted-glass aesthetic against the desktop.
         """
         if sys.platform != "darwin":
             return
-
         try:
-            objc = ctypes.cdll.LoadLibrary("/usr/lib/libobjc.dylib")
-        except OSError as exc:
-            log.warning("Glassmorphism: cannot load libobjc (%s)", exc)
-            return
-
-        try:
-            # Typed helpers – each objc_msgSend call gets its own
-            # CFUNCTYPE so the ABI is always correct and never segfaults.
-            objc.objc_getClass.restype = ctypes.c_void_p
-            objc.objc_getClass.argtypes = [ctypes.c_char_p]
-            objc.sel_registerName.restype = ctypes.c_void_p
-            objc.sel_registerName.argtypes = [ctypes.c_char_p]
-
-            # msg(id, SEL) -> id
-            _msg0 = ctypes.CFUNCTYPE(
-                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
-            # msg(id, SEL, long) -> void   (setMaterial: etc.)
-            _msg_long = ctypes.CFUNCTYPE(
-                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
-            # msg(id, SEL, id, long, id) -> void   (addSubview:positioned:relativeTo:)
-            _msg_add_sub = ctypes.CFUNCTYPE(
-                None, ctypes.c_void_p, ctypes.c_void_p,
-                ctypes.c_void_p, ctypes.c_long, ctypes.c_void_p)
-
-            msg0 = _msg0(("objc_msgSend", objc))
-            msg_long = _msg_long(("objc_msgSend", objc))
-            msg_add_sub = _msg_add_sub(("objc_msgSend", objc))
-            sel = objc.sel_registerName
-
-            # ── Allocate NSVisualEffectView ──
-            VEVClass = objc.objc_getClass(b"NSVisualEffectView")
-            if not VEVClass:
-                log.warning("Glassmorphism: NSVisualEffectView class not found")
-                return
-
-            vev = msg0(VEVClass, sel(b"alloc"))
-            if not vev:
-                log.warning("Glassmorphism: NSVisualEffectView alloc failed")
-                return
-
-            vev = msg0(vev, sel(b"init"))
-            if not vev:
-                log.warning("Glassmorphism: NSVisualEffectView init failed")
-                return
-
-            # ── Configure: material=Dark(4), blending=BehindWindow(0), state=Active(1) ──
-            msg_long(vev, sel(b"setMaterial:"), 4)
-            msg_long(vev, sel(b"setBlendingMode:"), 0)
-            msg_long(vev, sel(b"setState:"), 1)
-
-            # ── Get the NSWindow contentView from the Qt widget ──
-            view_ptr = int(self.winId())
-            if not view_ptr:
-                log.warning("Glassmorphism: winId() returned null")
-                return
-
-            nsview = ctypes.c_void_p(view_ptr)
-            nswindow = msg0(nsview, sel(b"window"))
-            if not nswindow:
-                log.warning("Glassmorphism: could not get NSWindow from view")
-                return
-
-            content_view = msg0(nswindow, sel(b"contentView"))
-            if not content_view:
-                log.warning("Glassmorphism: could not get contentView")
-                return
-
-            # ── Insert blur view behind all other subviews ──
-            msg_add_sub(content_view, sel(b"addSubview:positioned:relativeTo:"),
-                        vev, 0, None)
-
-            # ── Make Qt background translucent so blur shows through ──
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
-            log.info("Glassmorphism: macOS NSVisualEffectView enabled")
+            log.info("Glassmorphism: macOS translucent background enabled")
         except Exception as exc:
-            log.warning("Glassmorphism: macOS blur failed (%s), falling back to solid bg", exc)
+            log.warning("Glassmorphism: macOS setup failed (%s), using solid bg", exc)
 
     def _build_ui(self) -> None:
         self.setWindowTitle("Icosele Vault")
