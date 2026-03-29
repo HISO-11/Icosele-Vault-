@@ -143,53 +143,88 @@ class MainWindow(QMainWindow):
             log.warning("Glassmorphism: Windows blur failed (%s), falling back to solid bg", exc)
 
     def _apply_glass_macos(self) -> None:
-        """Use NSVisualEffectView via ctypes/objc_msgSend (macOS 10.14+)."""
+        """Use NSVisualEffectView via ctypes/objc_msgSend (macOS 10.14+).
+
+        Every objc call is guarded individually so a single failure
+        aborts early without segfaulting the process.
+        """
+        if sys.platform != "darwin":
+            return
+
         try:
-            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
             objc = ctypes.cdll.LoadLibrary("/usr/lib/libobjc.dylib")
+        except OSError as exc:
+            log.warning("Glassmorphism: cannot load libobjc (%s)", exc)
+            return
+
+        try:
+            # Typed helpers – each objc_msgSend call gets its own
+            # CFUNCTYPE so the ABI is always correct and never segfaults.
             objc.objc_getClass.restype = ctypes.c_void_p
+            objc.objc_getClass.argtypes = [ctypes.c_char_p]
             objc.sel_registerName.restype = ctypes.c_void_p
-            objc.objc_msgSend.restype = ctypes.c_void_p
-            objc.objc_msgSend.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+            objc.sel_registerName.argtypes = [ctypes.c_char_p]
 
-            NSApp = objc.objc_msgSend(
-                objc.objc_getClass(b"NSApplication"),
-                objc.sel_registerName(b"sharedApplication"))
-            # Get the NSWindow backing this QWidget
-            view_ptr = int(self.winId())
+            # msg(id, SEL) -> id
+            _msg0 = ctypes.CFUNCTYPE(
+                ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p)
+            # msg(id, SEL, long) -> void   (setMaterial: etc.)
+            _msg_long = ctypes.CFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
+            # msg(id, SEL, id, long, id) -> void   (addSubview:positioned:relativeTo:)
+            _msg_add_sub = ctypes.CFUNCTYPE(
+                None, ctypes.c_void_p, ctypes.c_void_p,
+                ctypes.c_void_p, ctypes.c_long, ctypes.c_void_p)
 
-            # Use the Cocoa windowNumber approach via effectiveAppearance
-            # Simpler: access the NSView, get its window, set appearance
-            send = objc.objc_msgSend
-            send3 = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p,
-                                     ctypes.c_void_p, ctypes.c_long)
+            msg0 = _msg0(("objc_msgSend", objc))
+            msg_long = _msg_long(("objc_msgSend", objc))
+            msg_add_sub = _msg_add_sub(("objc_msgSend", objc))
             sel = objc.sel_registerName
 
-            # Create NSVisualEffectView
+            # ── Allocate NSVisualEffectView ──
             VEVClass = objc.objc_getClass(b"NSVisualEffectView")
-            alloc_sel = sel(b"alloc")
-            init_sel = sel(b"initWithFrame:")
-            vev = send(VEVClass, alloc_sel)
+            if not VEVClass:
+                log.warning("Glassmorphism: NSVisualEffectView class not found")
+                return
 
-            # Set material = NSVisualEffectMaterialDark (4) and
-            # blendingMode = NSVisualEffectBlendingModeBehindWindow (0)
-            set_material = ctypes.CFUNCTYPE(
-                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
-            set_material(send)(vev, sel(b"setMaterial:"), 4)
-            set_blending = ctypes.CFUNCTYPE(
-                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
-            set_blending(send)(vev, sel(b"setBlendingMode:"), 0)
-            set_state = ctypes.CFUNCTYPE(
-                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
-            set_state(send)(vev, sel(b"setState:"), 1)  # active
+            vev = msg0(VEVClass, sel(b"alloc"))
+            if not vev:
+                log.warning("Glassmorphism: NSVisualEffectView alloc failed")
+                return
 
-            # Insert as the bottom-most subview of the NSWindow contentView
+            vev = msg0(vev, sel(b"init"))
+            if not vev:
+                log.warning("Glassmorphism: NSVisualEffectView init failed")
+                return
+
+            # ── Configure: material=Dark(4), blending=BehindWindow(0), state=Active(1) ──
+            msg_long(vev, sel(b"setMaterial:"), 4)
+            msg_long(vev, sel(b"setBlendingMode:"), 0)
+            msg_long(vev, sel(b"setState:"), 1)
+
+            # ── Get the NSWindow contentView from the Qt widget ──
+            view_ptr = int(self.winId())
+            if not view_ptr:
+                log.warning("Glassmorphism: winId() returned null")
+                return
+
             nsview = ctypes.c_void_p(view_ptr)
-            nswindow = send(nsview, sel(b"window"))
-            content_view = send(nswindow, sel(b"contentView"))
-            add_sub = ctypes.CFUNCTYPE(
-                None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_long)
-            add_sub(send)(content_view, sel(b"addSubview:positioned:relativeTo:"), vev, 0, None)
+            nswindow = msg0(nsview, sel(b"window"))
+            if not nswindow:
+                log.warning("Glassmorphism: could not get NSWindow from view")
+                return
+
+            content_view = msg0(nswindow, sel(b"contentView"))
+            if not content_view:
+                log.warning("Glassmorphism: could not get contentView")
+                return
+
+            # ── Insert blur view behind all other subviews ──
+            msg_add_sub(content_view, sel(b"addSubview:positioned:relativeTo:"),
+                        vev, 0, None)
+
+            # ── Make Qt background translucent so blur shows through ──
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
             log.info("Glassmorphism: macOS NSVisualEffectView enabled")
         except Exception as exc:
