@@ -77,6 +77,30 @@ def _can_use_sandbox(qemu_binary: str, display: str) -> bool:
         return False
 
 
+_VIRTIO_WIN_URL = "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso"
+_VIRTIO_WIN_PATH = Path.home() / "Downloads" / "virtio-win.iso"
+
+
+def _ensure_virtio_win() -> Path | None:
+    """Return path to virtio-win.iso, downloading in background if absent."""
+    if _VIRTIO_WIN_PATH.exists():
+        return _VIRTIO_WIN_PATH
+    _VIRTIO_WIN_PATH.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        log.info("Downloading virtio-win drivers (free, open source) to %s", _VIRTIO_WIN_PATH)
+        subprocess.Popen(
+            ["curl", "-L", "-o", str(_VIRTIO_WIN_PATH), _VIRTIO_WIN_URL],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+    except FileNotFoundError:
+        log.warning("curl not found — cannot download virtio-win.iso")
+    return None  # not ready yet this launch
+
+
+def _is_windows_vm(name: str) -> bool:
+    return "windows" in name.lower() or "win1" in name.lower() or "win7" in name.lower()
+
+
 def _needs_swtpm(extra_args: list[str]) -> bool:
     """Check if extra_args reference a TPM chardev that needs swtpm."""
     for arg in extra_args:
@@ -339,6 +363,8 @@ class QemuProcess:
         return None
 
     def build_args(self) -> list[str]:
+        import sys as _sys
+
         use_kvm = kvm_available()
         if not use_kvm:
             log.warning("KVM not available — VM will run slowly")
@@ -347,6 +373,8 @@ class QemuProcess:
         disk = self._ensure_disk_image()
         virtio_iso = self._extract_virtio_iso()
         extra = list(self.config.extra_args)
+        vm_name = self.config.name
+        is_windows = _is_windows_vm(vm_name)
 
         # Validate paths
         for label, path in [("QEMU binary", self.config.qemu_binary),
@@ -354,10 +382,12 @@ class QemuProcess:
             if path and not Path(path).exists():
                 log.error("%s not found: %s", label, path)
 
-        # Determine machine type and CPU from extra_args or defaults
+        # Check what extra_args already provide
         has_machine = any(a == "-machine" for a in extra)
         has_cpu = any(a == "-cpu" for a in extra)
+        has_usb = any("usb-ehci" in a or "usb-tablet" in a for a in extra)
 
+        # ── Base args (all VMs) ──
         args = [
             self.config.qemu_binary,
             "-enable-kvm",
@@ -369,25 +399,34 @@ class QemuProcess:
             "-pidfile", self.pid_path,
         ]
 
+        # CPU — default to -cpu host for all VMs
         if not has_cpu:
-            args += ["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"]
+            args += ["-cpu", "host"]
+
+        # Machine type
         if not has_machine:
             args += ["-machine", "pc"]
 
-        # TPM + UEFI support for Windows 11
+        # USB — all VMs get usb-ehci + usb-tablet
+        if not has_usb:
+            args += ["-device", "usb-ehci,id=ehci", "-device", "usb-tablet,bus=ehci.0"]
+
+        # ── TPM + UEFI (Windows 11 via template extra_args) ──
         needs_tpm = _needs_swtpm(extra)
         if needs_tpm:
-            # OVMF UEFI firmware (pflash, separate from IDE drives)
-            ovmf_code = _find_ovmf_code()
-            ovmf_vars = self._prepare_ovmf_vars()
-            if ovmf_code and ovmf_vars:
-                args += [
-                    "-drive", f"if=pflash,format=raw,readonly=on,unit=0,file={ovmf_code}",
-                    "-drive", f"if=pflash,format=raw,unit=1,file={ovmf_vars}",
-                ]
-                log.info("UEFI firmware: code=%s vars=%s", ovmf_code, ovmf_vars)
-            else:
-                log.warning("OVMF not found — UEFI/Secure Boot unavailable")
+            try:
+                ovmf_code = _find_ovmf_code()
+                ovmf_vars = self._prepare_ovmf_vars()
+                if ovmf_code and ovmf_vars:
+                    args += [
+                        "-drive", f"if=pflash,format=raw,readonly=on,unit=0,file={ovmf_code}",
+                        "-drive", f"if=pflash,format=raw,unit=1,file={ovmf_vars}",
+                    ]
+                    log.info("UEFI firmware: code=%s vars=%s", ovmf_code, ovmf_vars)
+                else:
+                    log.warning("OVMF not found — UEFI/Secure Boot unavailable")
+            except Exception as exc:
+                log.warning("OVMF setup failed (%s) — continuing without UEFI", exc)
 
             # Rewrite swtpm socket path or strip TPM args
             if _swtpm_available():
@@ -397,7 +436,6 @@ class QemuProcess:
                     for a in extra
                 ]
             else:
-                # Strip TPM args if swtpm not installed
                 skip = False
                 filtered: list[str] = []
                 for a in extra:
@@ -415,7 +453,7 @@ class QemuProcess:
                 extra = filtered
                 log.warning("swtpm not installed — TPM args stripped")
 
-        # Drives — assign sequential IDE indices to avoid conflicts
+        # ── Drives — sequential IDE indices ──
         drive_idx = 0
         if iso:
             args += ["-drive", f"file={iso},media=cdrom,index={drive_idx},if=ide"]
@@ -423,23 +461,41 @@ class QemuProcess:
         if disk:
             args += ["-drive", f"file={disk},format=qcow2,index={drive_idx},if=ide"]
             drive_idx += 1
+
+        # VirtIO drivers ISO (auto-download for Windows, or from extra_args)
+        if not virtio_iso and is_windows:
+            vw = _ensure_virtio_win()
+            if vw and vw.exists():
+                virtio_iso = str(vw)
         if virtio_iso and Path(virtio_iso).exists():
             args += ["-drive", f"file={virtio_iso},media=cdrom,index={drive_idx},if=ide"]
             drive_idx += 1
 
         args += ["-boot", "order=dc"]
         args += ["-netdev", "user,id=net0", "-device", "e1000,netdev=net0"]
-        args += ["-vga", "std", "-display", "gtk"]
-        args += ["-device", "usb-ehci", "-device", "usb-tablet"]
 
-        # Strip -drive entries from extra_args (already handled above)
+        # ── Display — platform and OS aware ──
+        if _sys.platform == "darwin":
+            args += ["-vga", "virtio", "-display", "cocoa"]
+        else:
+            args += ["-vga", "virtio", "-display", "gtk,gl=on"]
+
+        # ── Strip args from extra that build_args already handles ──
+        _handled = {"-machine", "-cpu", "-vga", "-display", "-boot"}
         cleaned: list[str] = []
         skip_next = False
         for i, a in enumerate(extra):
             if skip_next:
                 skip_next = False
                 continue
+            if a in _handled:
+                skip_next = True
+                continue
             if a == "-drive" and i + 1 < len(extra) and "media=cdrom" in extra[i + 1]:
+                skip_next = True
+                continue
+            if a == "-device" and i + 1 < len(extra) and (
+                    "usb-ehci" in extra[i + 1] or "usb-tablet" in extra[i + 1]):
                 skip_next = True
                 continue
             cleaned.append(a)
