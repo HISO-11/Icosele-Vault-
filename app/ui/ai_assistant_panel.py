@@ -27,10 +27,14 @@ _SYSTEM_PROMPT = (
     "application. You help users manage their virtual machines. You have "
     "access to the following VM data: {vm_list_json}. When the user asks "
     "to perform an action, respond with a JSON block in this exact format: "
-    '{"action": "start|stop|pause|snapshot|clone|quarantine|none", '
+    '{"action": "start|stop|pause|snapshot|clone|quarantine|create_vm|diagnose|none", '
     '"vm_name": "name or null", "snapshot_name": "name or null", '
-    '"message": "friendly explanation to show the user"}. For questions '
-    "that don't need an action, set action to none. Always be concise."
+    '"create_config": {"os": "ubuntu/windows/fedora/etc", "ram_mb": 4096, "cpu_cores": 4, "disk_gb": 40} or null, '
+    '"message": "friendly explanation to show the user"}. '
+    "When the user asks to create a VM (e.g. 'create a Ubuntu VM with 4GB RAM'), "
+    "set action to create_vm and fill create_config with extracted values. "
+    "When the user reports an error, set action to diagnose and message should contain the fix. "
+    "For questions that don't need an action, set action to none. Always be concise."
 )
 
 
@@ -41,6 +45,8 @@ class _Signals(QObject):
 
 class AIAssistantPanel(QFrame):
     action_requested = Signal(str, str, str)  # action, vm_name, snapshot_name
+    create_vm_requested = Signal(dict)  # create_config dict
+    diagnose_requested = Signal(str)  # error text for AI diagnosis
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -199,10 +205,28 @@ class AIAssistantPanel(QFrame):
             vm_name = parsed.get("vm_name") or ""
             snap_name = parsed.get("snapshot_name") or ""
             self._add_bubble("ai", msg)
-            if action and action != "none":
+            if action == "create_vm" and parsed.get("create_config"):
+                self.create_vm_requested.emit(parsed["create_config"])
+            elif action and action != "none" and action != "diagnose":
                 self.action_requested.emit(action, vm_name, snap_name)
         else:
             self._add_bubble("ai", raw[:500])
+
+    def diagnose_error(self, error_text: str) -> None:
+        """Send a QEMU error to AI for diagnosis."""
+        if not check_available():
+            return
+        prompt = f"This QEMU error occurred: {error_text}. What is the fix? Be concise."
+        self._add_bubble("user", f"[Auto-diagnosis] {error_text[:200]}")
+        self._btn_send.setEnabled(False)
+        self._typing.show()
+        sigs = _Signals()
+        sigs.response.connect(self._on_response)
+        sigs.error.connect(self._on_error)
+        self._sigs = sigs
+        threading.Thread(
+            target=self._worker, args=(prompt, _SYSTEM_PROMPT, sigs), daemon=True
+        ).start()
 
     def _on_error(self, msg: str):
         self._btn_send.setEnabled(True)

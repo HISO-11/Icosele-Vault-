@@ -257,6 +257,7 @@ class VMListPanel(QFrame):
         self._delegate = VMItemDelegate(self.list_widget)
         self.list_widget.setItemDelegate(self._delegate)
         self.list_widget.setMouseTracking(True)
+        self.list_widget.setSelectionMode(QListWidget.SelectionMode.ExtendedSelection)
         self.list_widget.setStyleSheet("""
             QListWidget { background: transparent; border: none; outline: none; }
             QListWidget::item { border: none; }
@@ -412,6 +413,14 @@ class VMListPanel(QFrame):
         clone_action = menu.addAction("\u2398  Clone")
         delete_action = menu.addAction("\u2717  Delete")
 
+        # Bulk operations if multiple selected
+        selected_rows = [self.list_widget.row(i) for i in self.list_widget.selectedItems()
+                         if i.flags() & Qt.ItemFlag.ItemIsSelectable]
+        bulk_delete_action = None
+        if len(selected_rows) > 1:
+            menu.addSeparator()
+            bulk_delete_action = menu.addAction(f"\u2717  Delete {len(selected_rows)} VMs")
+
         # Group submenu
         group_menu = menu.addMenu("\U0001f4c1  Group")
         no_group_action = group_menu.addAction("(No group)")
@@ -450,6 +459,17 @@ class VMListPanel(QFrame):
             self.configs[idx].group = group_actions[action]
             self.configs[idx].save()
             self._rebuild_list()
+        elif bulk_delete_action and action == bulk_delete_action:
+            reply = QMessageBox.question(
+                self, "Bulk Delete",
+                f"Delete {len(selected_rows)} virtual machines?\nThis cannot be undone.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
+                for row_idx in sorted(selected_rows, reverse=True):
+                    cfg_idx = self._config_index_for_name(
+                        self.list_widget.item(row_idx).text())
+                    if cfg_idx >= 0:
+                        self.vm_delete_requested.emit(cfg_idx)
 
     def _rebuild_list(self) -> None:
         """Rebuild list widget to reflect group changes."""

@@ -46,6 +46,9 @@ _SCHEMA = {
     "tags": list,
     "notes": str,
     "group": str,
+    "port_forward_rules": list,
+    "cpu_pinning": list,
+    "isolation_level": str,
 }
 
 
@@ -124,6 +127,9 @@ class VMConfig:
     tags: list[str] = field(default_factory=list)
     notes: str = ""
     group: str = ""
+    port_forward_rules: list[dict] = field(default_factory=list)
+    cpu_pinning: list[int] = field(default_factory=list)
+    isolation_level: str = "standard"  # standard, restricted, airgapped
 
     @property
     def vm_id(self) -> str:
@@ -135,7 +141,10 @@ class VMConfig:
         return Path("/dev/vhost-net").exists()
 
     def net_args(self) -> list[str]:
-        if self.net_mode == NET_MODE_NONE:
+        # Isolation levels override network
+        if self.isolation_level == "airgapped" or self.net_mode == NET_MODE_NONE:
+            return []
+        if self.isolation_level == "restricted":
             return []
         vhost = ",vhost=on" if self.vhost_net_available() else ""
         if self.net_mode == NET_MODE_BRIDGE:
@@ -152,8 +161,16 @@ class VMConfig:
         dns_part = ""
         if self.dns_servers:
             dns_part = f",dns={self.dns_servers[0]}"
+        # Port forwarding rules for NAT mode
+        fwd_part = ""
+        for rule in self.port_forward_rules:
+            proto = rule.get("proto", "tcp")
+            host_port = rule.get("host_port", "")
+            guest_port = rule.get("guest_port", "")
+            if host_port and guest_port:
+                fwd_part += f",hostfwd={proto}::{host_port}-:{guest_port}"
         return [
-            "-netdev", f"user,id=net0{dns_part}",
+            "-netdev", f"user,id=net0{dns_part}{fwd_part}",
             "-device", "virtio-net-pci,netdev=net0",
         ]
 

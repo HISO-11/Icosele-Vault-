@@ -431,6 +431,10 @@ class QemuProcess:
         # Memory Ballooning — dynamic memory adjustment
         args += ["-device", "virtio-balloon-pci"]
 
+        # Hugepages support
+        if self.config.hugepages_enabled:
+            args += ["-mem-prealloc", "-mem-path", "/dev/hugepages"]
+
         # ── TPM + UEFI (Windows 11 via template extra_args) ──
         needs_tpm = _needs_swtpm(extra)
         if needs_tpm:
@@ -597,6 +601,17 @@ class QemuProcess:
 
         self.state = ProcessState.RUNNING
         log.info("QEMU process started (PID %d) for VM %r", self._proc.pid, self.config.name)
+
+        # CPU pinning via taskset
+        if self.config.cpu_pinning:
+            cores = ",".join(str(c) for c in self.config.cpu_pinning)
+            try:
+                subprocess.run(
+                    ["taskset", "-cp", cores, str(self._proc.pid)],
+                    capture_output=True, timeout=5)
+                log.info("CPU pinning set to cores %s for PID %d", cores, self._proc.pid)
+            except (FileNotFoundError, subprocess.SubprocessError) as exc:
+                log.warning("CPU pinning failed: %s", exc)
 
         # Restrict QMP socket permissions to owner-only once QEMU creates it
         self._chmod_socket()

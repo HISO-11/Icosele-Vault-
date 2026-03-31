@@ -4,7 +4,8 @@ import subprocess
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QComboBox, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget,
+    QComboBox, QFrame, QHBoxLayout, QLabel, QLineEdit, QListWidget,
+    QListWidgetItem, QPushButton, QSpinBox, QVBoxLayout, QWidget,
 )
 
 from app.ui.theme import (
@@ -41,6 +42,7 @@ MODE_DESCRIPTIONS = {
 
 class NetworkPanel(QFrame):
     config_changed = Signal(str, str)
+    port_forwards_changed = Signal(list)  # list of {host_port, guest_port, proto}
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -122,6 +124,59 @@ class NetworkPanel(QFrame):
         self._update_vhost_badge()
         layout.addWidget(self._vhost_badge)
 
+        # Port forwarding section
+        layout.addWidget(QLabel("PORT FORWARDING (NAT)", styleSheet=SECTION_LABEL_STYLE))
+        pf_desc = QLabel("Forward host ports to guest ports (NAT mode only).")
+        pf_desc.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px; background: transparent;")
+        layout.addWidget(pf_desc)
+
+        self._pf_list = QListWidget()
+        self._pf_list.setMaximumHeight(80)
+        self._pf_list.setStyleSheet(
+            f"QListWidget {{ background: {BG_CARD}; border: 1px solid {BORDER};"
+            f" border-radius: 4px; color: {TEXT_PRIMARY}; font-size: 11px;"
+            f" font-family: monospace; }}"
+            f"QListWidget::item {{ padding: 3px; }}")
+        layout.addWidget(self._pf_list)
+
+        pf_add_row = QHBoxLayout()
+        pf_add_row.setSpacing(4)
+        self._pf_host = QSpinBox()
+        self._pf_host.setRange(1, 65535)
+        self._pf_host.setValue(8080)
+        self._pf_host.setPrefix("Host: ")
+        self._pf_host.setStyleSheet(f"QSpinBox {{ background: {BG_CARD}; color: {TEXT_PRIMARY};"
+                                     f" border: 1px solid {BORDER}; border-radius: 4px;"
+                                     f" padding: 2px 4px; font-size: 11px; }}")
+        self._pf_guest = QSpinBox()
+        self._pf_guest.setRange(1, 65535)
+        self._pf_guest.setValue(80)
+        self._pf_guest.setPrefix("Guest: ")
+        self._pf_guest.setStyleSheet(self._pf_host.styleSheet())
+        self._pf_proto = QComboBox()
+        self._pf_proto.addItems(["tcp", "udp"])
+        self._pf_proto.setStyleSheet(COMBO_STYLE)
+        self._pf_proto.setFixedWidth(60)
+        btn_add_pf = QPushButton("+")
+        btn_add_pf.setFixedSize(28, 28)
+        btn_add_pf.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_add_pf.setStyleSheet(save_btn_style())
+        btn_add_pf.clicked.connect(self._on_add_port_forward)
+        btn_rm_pf = QPushButton("-")
+        btn_rm_pf.setFixedSize(28, 28)
+        btn_rm_pf.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_rm_pf.setStyleSheet(save_btn_style())
+        btn_rm_pf.clicked.connect(self._on_remove_port_forward)
+        pf_add_row.addWidget(self._pf_host)
+        pf_add_row.addWidget(self._pf_guest)
+        pf_add_row.addWidget(self._pf_proto)
+        pf_add_row.addWidget(btn_add_pf)
+        pf_add_row.addWidget(btn_rm_pf)
+        pf_add_row.addStretch()
+        layout.addLayout(pf_add_row)
+
+        self._port_rules: list[dict] = []
+
         layout.addStretch()
 
         self.mode_combo.currentIndexChanged.connect(self._on_mode_changed)
@@ -188,6 +243,32 @@ class NetworkPanel(QFrame):
                 f" border-radius: 12px; font-size: 11px; font-weight: 700;"
                 f" padding: 4px 12px; font-family: {FONT_FAMILY};")
             self._vhost_badge.setToolTip("Run: sudo modprobe vhost_net")
+
+    def set_port_forwards(self, rules: list[dict]) -> None:
+        self._port_rules = list(rules)
+        self._rebuild_pf_list()
+
+    def _rebuild_pf_list(self) -> None:
+        self._pf_list.clear()
+        for r in self._port_rules:
+            self._pf_list.addItem(
+                f"{r.get('proto', 'tcp')}  :{r.get('host_port', '')} -> :{r.get('guest_port', '')}")
+
+    def _on_add_port_forward(self) -> None:
+        self._port_rules.append({
+            "host_port": str(self._pf_host.value()),
+            "guest_port": str(self._pf_guest.value()),
+            "proto": self._pf_proto.currentText(),
+        })
+        self._rebuild_pf_list()
+        self.port_forwards_changed.emit(self._port_rules)
+
+    def _on_remove_port_forward(self) -> None:
+        row = self._pf_list.currentRow()
+        if 0 <= row < len(self._port_rules):
+            self._port_rules.pop(row)
+            self._rebuild_pf_list()
+            self.port_forwards_changed.emit(self._port_rules)
 
     def _on_save(self) -> None:
         self.config_changed.emit(self._current_mode(), self._current_iface())

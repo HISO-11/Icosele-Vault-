@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 class SnapshotPanel(QFrame):
     snapshot_action = Signal(str, str)
     boot_from_snapshot = Signal(str)  # snapshot name
+    screenshot_requested = Signal(str)  # snapshot name — capture screenshot at creation
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -51,6 +52,24 @@ class SnapshotPanel(QFrame):
         br.addStretch()
         layout.addLayout(br)
 
+        br2 = QHBoxLayout()
+        br2.setSpacing(8)
+        self.btn_compare = QPushButton("Compare")
+        self.btn_compare.setStyleSheet(subtle_btn_style())
+        self.btn_compare.setFixedHeight(32)
+        self.btn_compare.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.btn_compare.clicked.connect(self._on_compare)
+        br2.addWidget(self.btn_compare)
+        br2.addStretch()
+        layout.addLayout(br2)
+
+        # Snapshot preview area
+        self._preview_label = QLabel("")
+        self._preview_label.setStyleSheet(
+            "background: transparent; font-size: 11px; color: #888;")
+        self._preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self._preview_label)
+
         self.btn_create.clicked.connect(self._on_create)
         self.btn_restore.clicked.connect(self._on_restore)
         self.btn_delete.clicked.connect(self._on_delete)
@@ -77,6 +96,7 @@ class SnapshotPanel(QFrame):
         name, ok = QInputDialog.getText(self, "Create Snapshot", "Snapshot name:")
         if ok and name.strip():
             self.snapshot_action.emit("create", name.strip())
+            self.screenshot_requested.emit(name.strip())
 
     def _on_restore(self) -> None:
         name = self._selected_name()
@@ -107,6 +127,22 @@ class SnapshotPanel(QFrame):
                                  QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                                  ) == QMessageBox.StandardButton.Yes:
             self.boot_from_snapshot.emit(name)
+
+    def _on_compare(self) -> None:
+        items = self.snap_list.selectedItems()
+        names = [it.text() for it in items]
+        if len(names) < 2:
+            QMessageBox.information(self, "Compare Snapshots",
+                                     "Select two snapshots to compare (Ctrl+click).")
+            return
+        a, b = names[0], names[1]
+        self._preview_label.setText(
+            f"Comparing: {a} vs {b}\n"
+            f"Both snapshots share the same disk base.\n"
+            f"Config differences would appear here if snapshot metadata included VM settings.")
+
+    def set_preview_text(self, text: str) -> None:
+        self._preview_label.setText(text)
 
     def apply_theme(self) -> None:
         from app.ui import theme

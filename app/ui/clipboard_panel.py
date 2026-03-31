@@ -115,6 +115,14 @@ class ClipboardPanel(QFrame):
 
         layout.addWidget(install_card)
 
+        # Active sync indicator
+        self._sync_indicator = QLabel("\u25cf  Clipboard sync active — polling every 500ms")
+        self._sync_indicator.setStyleSheet(
+            f"color: {ACCENT}; font-size: 11px; font-weight: 600;"
+            f" background: transparent; font-family: {FONT_FAMILY};")
+        self._sync_indicator.hide()
+        layout.addWidget(self._sync_indicator)
+
         # QEMU args preview
         layout.addWidget(QLabel("QEMU ARGS", styleSheet=SECTION_LABEL_STYLE))
         self._args_preview = QLabel()
@@ -129,6 +137,10 @@ class ClipboardPanel(QFrame):
 
         self._enable_check.toggled.connect(self._on_toggled)
         self._update_ui()
+
+    def set_vm_running(self, running: bool) -> None:
+        enabled = self._enable_check.isChecked()
+        self._sync_indicator.setVisible(running and enabled)
 
     def set_config(self, enabled: bool, vm_id: str = "") -> None:
         self._vm_id = vm_id

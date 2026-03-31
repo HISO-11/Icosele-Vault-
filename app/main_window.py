@@ -274,11 +274,13 @@ class MainWindow(QMainWindow):
         self.vm_controls.btn_pause.clicked.connect(self._on_pause)
         self.vm_controls.snapshot_panel.snapshot_action.connect(self._on_snapshot_action)
         self.vm_controls.snapshot_panel.boot_from_snapshot.connect(self._on_boot_from_snapshot)
+        self.vm_controls.snapshot_panel.screenshot_requested.connect(self._on_snapshot_screenshot)
         self.vm_controls.snap_dag_panel.snapshot_action.connect(self._on_snapshot_action)
         self.vm_controls.snap_dag_panel.clone_requested.connect(self._on_clone_vm)
         self.vm_controls.snap_dag_panel.branch_changed.connect(
             self.vm_controls.branch_badge.setText)
         self.vm_controls.network_panel.config_changed.connect(self._on_network_changed)
+        self.vm_controls.network_panel.port_forwards_changed.connect(self._on_port_forwards_changed)
         self.vm_controls.usb_panel.usb_action.connect(self._on_usb_action)
         self.vm_controls.usb_panel.config_changed.connect(self._on_usb_config_changed)
         self.vm_controls.display_panel.config_changed.connect(self._on_display_changed)
@@ -305,9 +307,11 @@ class MainWindow(QMainWindow):
         self.vm_controls.quarantine_panel.restore_requested.connect(self._on_restore_network)
         self.vm_controls.timeline_panel.snapshot_action.connect(self._on_snapshot_action)
         self.vm_controls.ai_assistant.action_requested.connect(self._on_ai_action)
+        self.vm_controls.ai_assistant.create_vm_requested.connect(self._on_ai_create_config)
         self.vm_controls.usb_panel.remembered_changed.connect(self._on_usb_remembered_changed)
         self.vm_controls.webcam_panel.passthrough_requested.connect(self._on_webcam_passthrough)
         self.vm_controls.sandbox_panel.snapshot_action.connect(self._on_snapshot_action)
+        self.vm_controls.system_status_panel.isolation_changed.connect(self._on_isolation_changed)
         self.vm_controls.archaeology_panel.create_vm_requested.connect(self._on_archaeology_create)
         self.vm_controls.team_library_panel.deploy_requested.connect(self._on_team_deploy)
         self.dashboard.create_requested.connect(self._on_create_vm)
@@ -391,6 +395,7 @@ class MainWindow(QMainWindow):
         cfg = self._current_vm
         self._update_overview(cfg)
         self.vm_controls.network_panel.set_config(cfg.net_mode, cfg.net_bridge_iface)
+        self.vm_controls.network_panel.set_port_forwards(cfg.port_forward_rules)
         self.vm_controls.usb_panel.set_assigned_devices(cfg.usb_devices)
         self.vm_controls.usb_panel.set_remembered_devices(cfg.usb_remembered_devices)
         self.vm_controls.gpu_panel.set_assigned_gpus(cfg.gpu_passthrough)
@@ -431,6 +436,7 @@ class MainWindow(QMainWindow):
         self.vm_controls.vm_share_panel.set_qmp_provider(lambda vid: self._qmp_conns.get(vid))
         self.vm_controls.handoff_panel.set_vm(cfg.vm_id, cfg.name, cfg.disk_path)
         self.vm_controls.recording_panel.set_vm(cfg.vm_id, cfg.name)
+        self.vm_controls.system_status_panel.set_isolation(cfg.isolation_level)
         self.vm_controls.recording_panel.set_qmp_provider(lambda vid: self._qmp_conns.get(vid))
         proc = self._processes.get(cfg.vm_id)
         is_running = bool(proc and proc.refresh_state() == ProcessState.RUNNING)
@@ -589,6 +595,28 @@ class MainWindow(QMainWindow):
         cfg.net_bridge_iface = bridge_iface
         cfg.save()
         self._update_overview(cfg)
+
+    def _on_isolation_changed(self, level: str) -> None:
+        cfg = self._current_vm
+        if not cfg:
+            return
+        cfg.isolation_level = level
+        if level == "restricted":
+            cfg.clipboard_sync = False
+            cfg.shared_folders = []
+        elif level == "airgapped":
+            cfg.clipboard_sync = False
+            cfg.shared_folders = []
+            cfg.net_mode = "none"
+        cfg.save()
+        audit.record("isolation_changed", cfg.vm_id, cfg.name, {"level": level})
+
+    def _on_port_forwards_changed(self, rules: list[dict]) -> None:
+        cfg = self._current_vm
+        if not cfg:
+            return
+        cfg.port_forward_rules = rules
+        cfg.save()
 
     def _on_usb_config_changed(self, devices: list[dict]) -> None:
         cfg = self._current_vm
@@ -761,6 +789,9 @@ class MainWindow(QMainWindow):
                     self, "VM Failed to Start",
                     f"QEMU exited immediately for \"{cfg.name}\".\n\n"
                     f"{stderr if stderr else 'No error output captured.'}")
+                # Send error to AI for diagnosis
+                if stderr:
+                    self.vm_controls.ai_assistant.diagnose_error(stderr[:500])
                 return
             log.info("Attempting QMP connection to: %s", proc.socket_path)
             try:
@@ -906,6 +937,23 @@ class MainWindow(QMainWindow):
         except QMPError:
             pass
         self._update_qmp_status(cfg.vm_id)
+
+    def _on_snapshot_screenshot(self, snapshot_name: str) -> None:
+        """Capture a screenshot when a snapshot is created."""
+        cfg = self._current_vm
+        if not cfg:
+            return
+        qmp = self._qmp_conns.get(cfg.vm_id)
+        if not qmp or not qmp.connected:
+            return
+        snap_dir = Path.home() / ".icosele-vault" / "snapshots" / cfg.vm_id
+        snap_dir.mkdir(parents=True, exist_ok=True)
+        screenshot_path = str(snap_dir / f"{snapshot_name}.ppm")
+        try:
+            qmp.execute("screendump", {"filename": screenshot_path})
+            log.info("Snapshot screenshot saved: %s", screenshot_path)
+        except QMPError as exc:
+            log.warning("Failed to capture snapshot screenshot: %s", exc)
 
     def _on_boot_from_snapshot(self, snapshot_name: str) -> None:
         cfg = self._current_vm
@@ -1447,6 +1495,20 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self, f"Network Anomaly — {vm_name}",
                 f"Severity: {severity.upper()}\n{desc}")
+
+    def _on_ai_create_config(self, config: dict) -> None:
+        """Handle AI-requested VM creation with extracted config."""
+        os_type = config.get("os", "linux")
+        ram = config.get("ram_mb", 4096)
+        cpus = config.get("cpu_cores", 4)
+        disk_gb = config.get("disk_gb", 40)
+        name = f"{os_type}-ai-vm"
+        from config.vm_config import VMConfig
+        cfg = VMConfig(name=name, ram_mb=ram, cpu_cores=cpus)
+        cfg.extra_args = ["-machine", "q35"]
+        cfg.save()
+        self.vm_list.add_vm(cfg)
+        audit.record("vm_created", cfg.vm_id, cfg.name, {"source": "ai", "config": config})
 
     def _on_ai_action(self, action: str, vm_name: str, snap_name: str) -> None:
         # Find VM by name

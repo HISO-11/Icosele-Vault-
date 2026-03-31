@@ -435,6 +435,12 @@ class VMCreateDialog(QDialog):
         git_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         git_btn.clicked.connect(self._on_import_git_repo)
         btn_row.addWidget(git_btn)
+        community_btn = QPushButton("Community Templates")
+        community_btn.setStyleSheet(subtle_btn_style())
+        community_btn.setFixedHeight(34)
+        community_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        community_btn.clicked.connect(self._on_community_templates)
+        btn_row.addWidget(community_btn)
         btn_row.addStretch()
         skip_btn = QPushButton("Skip")
         skip_btn.setStyleSheet(secondary_btn_style())
@@ -655,6 +661,42 @@ class VMCreateDialog(QDialog):
         layout.addLayout(btn_row)
 
         self.net_combo.currentIndexChanged.connect(self._on_net_mode_changed)
+
+    def _on_community_templates(self) -> None:
+        """Fetch community templates from GitHub and allow selection."""
+        import json as _json
+        try:
+            import requests
+            resp = requests.get(
+                "https://raw.githubusercontent.com/HISO-11/Icosele-Vault-/main/templates.json",
+                timeout=10)
+            if resp.status_code != 200:
+                QMessageBox.information(self, "Community Templates",
+                                        "No community templates available yet.")
+                return
+            templates = resp.json()
+            if not templates:
+                QMessageBox.information(self, "Community Templates",
+                                        "No community templates available yet.")
+                return
+            # Show simple selection dialog
+            names = [f"{t.get('name', '?')} — {t.get('description', '')}" for t in templates]
+            from PySide6.QtWidgets import QInputDialog
+            name, ok = QInputDialog.getItem(
+                self, "Community Templates", "Select a template:", names, 0, False)
+            if ok and name:
+                idx = names.index(name)
+                tpl = templates[idx]
+                self.name_input.setText(tpl.get("name", "community-vm"))
+                self.ram_input.setValue(tpl.get("ram_mb", 4096))
+                self.cpu_input.setValue(tpl.get("cpu_cores", 4))
+                self._stack.setCurrentIndex(1)
+        except ImportError:
+            QMessageBox.information(self, "Community Templates",
+                                    "Install 'requests' package to use this feature.")
+        except Exception as exc:
+            QMessageBox.information(self, "Community Templates",
+                                    f"Could not fetch templates: {exc}")
 
     def _on_import_git_repo(self) -> None:
         repo_dir = QFileDialog.getExistingDirectory(

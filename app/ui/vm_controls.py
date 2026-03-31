@@ -55,6 +55,9 @@ from app.ui.theme import (
     ACCENT, BG_CARD, BG_ELEVATED, BG_PANEL, BORDER, FONT_FAMILY,
     TAB_STYLE, TEXT_MUTED, TEXT_ON_ACCENT, TEXT_PRIMARY, TEXT_SECONDARY,
 )
+from app.ui.activity_log_panel import ActivityLogPanel
+from app.ui.iso_library_panel import ISOLibraryPanel
+from app.ui.system_status_panel import SystemStatusPanel
 from app.ui.usb_panel import USBPanel
 
 _SUBLABEL = "#8a9ab0"
@@ -725,6 +728,9 @@ class VMControlPanel(QFrame):
         self.team_library_panel = TeamLibraryPanel()
         self.recording_panel = RecordingPanel()
         self.cloud_panel = CloudPanel()
+        self.system_status_panel = SystemStatusPanel()
+        self.iso_library_panel = ISOLibraryPanel()
+        self.activity_log_panel = ActivityLogPanel()
 
         # Settings items list
         self._settings_items: list[tuple[str, QWidget]] = [
@@ -749,6 +755,9 @@ class VMControlPanel(QFrame):
             ("Audit Log", self.audit_panel),
             ("Webhooks", self.webhook_panel),
             ("Plugins", self.plugin_panel),
+            ("System", self.system_status_panel),
+            ("ISO Library", self.iso_library_panel),
+            ("Activity", self.activity_log_panel),
         ]
 
         # Settings page: grid of category cards + stacked panels
@@ -864,6 +873,7 @@ class VMControlPanel(QFrame):
             import subprocess, json as _json
             fmt = "qcow2"
             size_sub = ""
+            actual_sub = ""
             try:
                 out = subprocess.check_output(
                     ["qemu-img", "info", "--output=json", disk],
@@ -871,22 +881,30 @@ class VMControlPanel(QFrame):
                 info = _json.loads(out)
                 fmt = info.get("format", "qcow2")
                 vsize = info.get("virtual-size", 0)
+                asize = info.get("actual-size", 0)
                 if vsize:
-                    size_sub = f"{vsize / (1024**3):.1f} GB"
+                    size_sub = f"Total: {vsize / (1024**3):.1f} GB"
+                if asize:
+                    actual_sub = f"Used: {asize / (1024**3):.1f} GB"
             except Exception:
                 pass
             disk_filename = os.path.basename(disk)[:24]
             self.overview_tab.card_disk.set_value(
-                fmt, "", size_sub or disk_filename,
-                secondary=disk_filename if size_sub else "")
+                fmt, "", actual_sub or size_sub or disk_filename,
+                secondary=size_sub if actual_sub else disk_filename)
         else:
             self.overview_tab.card_disk.set_value(
                 "No disk", "", "Edit VM to attach a disk")
 
-        net_label = {"nat": "NAT", "bridge": "Bridged", "hostonly": "Host-only"}.get(net_mode, "NAT")
+        net_label = {"nat": "NAT", "bridge": "Bridged", "hostonly": "Host-only",
+                     "none": "Disabled"}.get(net_mode, "NAT")
+        fwd_count = len(getattr(self, '_current_fwd_rules', []))
+        net_secondary = f"{net_mode or 'nat'} mode"
+        if fwd_count:
+            net_secondary += f" | {fwd_count} port forward(s)"
         self.overview_tab.card_net.set_value(
             net_label, "", "virtio-net",
-            secondary=f"{net_mode or 'nat'} mode")
+            secondary=net_secondary)
         self.perf_panel.set_ram_max(float(ram))
 
     def set_buttons_for_state(self, status: str) -> None:
