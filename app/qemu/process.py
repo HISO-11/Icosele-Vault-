@@ -412,21 +412,36 @@ class QemuProcess:
                 extra = filtered
                 log.warning("swtpm not installed — TPM args stripped")
 
-        # Drives on IDE: index 0=ISO, 1=disk, 2=virtio
+        # Drives — assign sequential IDE indices to avoid conflicts
+        drive_idx = 0
         if iso:
-            args += ["-drive", f"file={iso},media=cdrom,index=0,if=ide"]
+            args += ["-drive", f"file={iso},media=cdrom,index={drive_idx},if=ide"]
+            drive_idx += 1
         if disk:
-            args += ["-drive", f"file={disk},format=qcow2,index=1,if=ide"]
+            args += ["-drive", f"file={disk},format=qcow2,index={drive_idx},if=ide"]
+            drive_idx += 1
         if virtio_iso and Path(virtio_iso).exists():
-            args += ["-drive", f"file={virtio_iso},media=cdrom,index=2,if=ide"]
+            args += ["-drive", f"file={virtio_iso},media=cdrom,index={drive_idx},if=ide"]
+            drive_idx += 1
 
         args += ["-boot", "order=dc"]
         args += ["-netdev", "user,id=net0", "-device", "e1000,netdev=net0"]
         args += ["-vga", "std", "-display", "gtk"]
         args += ["-device", "usb-ehci", "-device", "usb-tablet"]
 
-        # Append template/user extra_args
-        args += extra
+        # Strip -drive entries from extra_args (already handled above)
+        cleaned: list[str] = []
+        skip_next = False
+        for i, a in enumerate(extra):
+            if skip_next:
+                skip_next = False
+                continue
+            if a == "-drive" and i + 1 < len(extra) and "media=cdrom" in extra[i + 1]:
+                skip_next = True
+                continue
+            cleaned.append(a)
+
+        args += cleaned
 
         return args
 
