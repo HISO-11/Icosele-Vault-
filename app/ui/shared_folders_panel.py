@@ -122,7 +122,8 @@ class SharedFoldersPanel(QFrame):
             f" background: transparent;")
         layout.addWidget(mount_note)
 
-        self._mount_cmd = QLabel("mount -t virtiofs <tag> /mnt/shared")
+        self._mount_cmd = QLabel(
+            "mount -t 9p -o trans=virtio shared /mnt/shared")
         self._mount_cmd.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self._mount_cmd.setWordWrap(True)
         self._mount_cmd.setStyleSheet(
@@ -200,25 +201,22 @@ class SharedFoldersPanel(QFrame):
 
         if self._folders:
             first_tag = self._folders[0]["mount_tag"]
-            self._mount_cmd.setText(f"mount -t virtiofs {first_tag} /mnt/shared")
+            self._mount_cmd.setText(
+                f"mount -t 9p -o trans=virtio {first_tag} /mnt/shared")
         else:
-            self._mount_cmd.setText("mount -t virtiofs <tag> /mnt/shared")
+            self._mount_cmd.setText(
+                "mount -t 9p -o trans=virtio shared /mnt/shared")
 
         if not self._folders:
             self._args_preview.setText("(no shared folders configured)")
             return
 
         lines = []
-        vm_id = self._vm_id or "<vm>"
         for i, f in enumerate(self._folders):
-            sock = f"/tmp/icosele-vault/{vm_id}/virtiofs{i}.sock"
+            tag = f["mount_tag"]
+            path = f["host_path"]
+            ro = ",readonly=on" if f.get("readonly") else ""
             lines.append(
-                f"-chardev socket,id=char{i},path={sock}")
-            lines.append(
-                f"-device vhost-user-fs-pci,queue-size=1024,"
-                f"chardev=char{i},tag={f['mount_tag']}")
-        lines.append(
-            f"-object memory-backend-file,id=mem,"
-            f"size={self._ram_mb}M,mem-path=/dev/hugepages,share=on")
-        lines.append("-numa node,memdev=mem")
+                f"-virtfs local,path={path},mount_tag={tag},"
+                f"security_model=passthrough,id=fsdev{i}{ro}")
         self._args_preview.setText("\n".join(lines))

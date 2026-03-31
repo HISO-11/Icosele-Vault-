@@ -153,9 +153,38 @@ class ConsolePanel(QFrame):
         self._running_widget.hide()
         content_layout.addWidget(self._running_widget)
 
+        # Feature 11 — Clipboard sharing tip (shown when running)
+        self._tip_label = QLabel(
+            "Tip: Install qemu-guest-agent inside your VM to enable "
+            "clipboard sharing and file drag-and-drop")
+        self._tip_label.setWordWrap(True)
+        self._tip_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._tip_label.setStyleSheet(
+            f"color: {TEXT_MUTED}; font-size: 11px; font-style: italic;"
+            f" background: transparent; padding: 8px 40px;"
+            f" font-family: {FONT_FAMILY};")
+        self._tip_label.hide()
+        content_layout.addWidget(self._tip_label)
+
+        # Feature 8 — VirtIO drivers notification (Windows VMs)
+        self._virtio_attached = False
+        self._virtio_notice = QLabel(
+            "VirtIO drivers attached \u2014 install from E: drive after Windows setup")
+        self._virtio_notice.setWordWrap(True)
+        self._virtio_notice.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._virtio_notice.setStyleSheet(
+            f"color: {ACCENT}; font-size: 11px; font-weight: 600;"
+            f" background: transparent; padding: 4px 40px;"
+            f" font-family: {FONT_FAMILY};")
+        self._virtio_notice.hide()
+        content_layout.addWidget(self._virtio_notice)
+
         content_layout.addStretch()
 
         layout.addWidget(self._content, 1)
+
+    def set_virtio_attached(self, attached: bool) -> None:
+        self._virtio_attached = attached
 
     def get_start_button(self) -> QPushButton:
         return self._btn_start
@@ -174,6 +203,12 @@ class ConsolePanel(QFrame):
             self._running_title.setText("Display running in external window")
             self._running_widget.show()
             self._btn_front.show()
+            self._tip_label.show()
+            # Show VirtIO notification for Windows VMs
+            if self._virtio_attached:
+                self._virtio_notice.show()
+            else:
+                self._virtio_notice.hide()
         elif status == "paused":
             self._status_label.setText("PAUSED")
             self._status_label.setStyleSheet(
@@ -184,6 +219,8 @@ class ConsolePanel(QFrame):
             self._running_title.setText("Display paused")
             self._running_widget.show()
             self._btn_front.show()
+            self._tip_label.show()
+            self._virtio_notice.hide()
         else:
             self._status_label.setText("STOPPED")
             self._status_label.setStyleSheet(
@@ -193,6 +230,8 @@ class ConsolePanel(QFrame):
             self._stopped_widget.show()
             self._running_widget.hide()
             self._btn_front.hide()
+            self._tip_label.hide()
+            self._virtio_notice.hide()
 
     def apply_theme(self) -> None:
         from app.ui import theme

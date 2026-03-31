@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
+import os
+import zipfile
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QRect, QRectF, Qt, Signal, QTimer
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QInputDialog, QLabel, QLineEdit,
+    QFileDialog, QFrame, QHBoxLayout, QInputDialog, QLabel, QLineEdit,
     QListWidget, QListWidgetItem, QMenu, QMessageBox,
     QPushButton, QStyle, QStyledItemDelegate,
     QStyleOptionViewItem, QVBoxLayout, QWidget,
@@ -15,6 +18,33 @@ from app.ui.theme import (
     ACCENT, ACCENT_LIGHT, BG_CARD, BG_DEEP, BG_ELEVATED, BORDER,
     FONT_FAMILY, STOP_RED, SUCCESS, TEXT_MUTED, TEXT_PRIMARY, TEXT_SECONDARY, WARNING,
 )
+
+def export_vm(vm_config: VMConfig, output_path: str) -> None:
+    """Package VM config JSON + disk into .ivault zip file."""
+    from dataclasses import asdict
+    with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr('config.json', json.dumps(asdict(vm_config), indent=2))
+        disk = vm_config.disk_path
+        if disk and os.path.exists(disk):
+            zf.write(disk, 'disk.qcow2')
+
+
+def import_vm(archive_path: str) -> VMConfig:
+    """Extract .ivault file, restore config and disk."""
+    with zipfile.ZipFile(archive_path, 'r') as zf:
+        data = json.loads(zf.read('config.json'))
+        cfg = VMConfig(**{k: v for k, v in data.items()
+                         if k in {f.name for f in __import__('dataclasses').fields(VMConfig)}})
+        if 'disk.qcow2' in zf.namelist():
+            vm_dir = Path.home() / ".icosele-vault" / "vms" / cfg.vm_id
+            vm_dir.mkdir(parents=True, exist_ok=True)
+            disk_dest = vm_dir / f"{cfg.vm_id}.qcow2"
+            with zf.open('disk.qcow2') as src, open(disk_dest, 'wb') as dst:
+                import shutil
+                shutil.copyfileobj(src, dst)
+            cfg.disk_path = str(disk_dest)
+    return cfg
+
 
 _ICOSELE_ORANGE = "#f47b1f"
 _AVATAR_COLORS = ["#a6e3a1", "#89b4fa", "#cba6f7", "#f9e2af", "#fab387", "#f38ba8", "#94e2d5", "#74c7ec"]
@@ -114,6 +144,7 @@ class VMListPanel(QFrame):
     clone_requested = Signal(int)            # index
     vm_rename_requested = Signal(int, str)   # index, new_name
     vm_delete_requested = Signal(int)        # index
+    vm_imported = Signal(object)             # VMConfig
 
     def __init__(self, configs: list[VMConfig], parent=None) -> None:
         super().__init__(parent)
@@ -233,6 +264,33 @@ class VMListPanel(QFrame):
 
         layout.addWidget(self.list_widget)
         layout.addStretch()
+
+        # Import/Export buttons
+        ie_row = QHBoxLayout()
+        ie_row.setContentsMargins(14, 0, 14, 0)
+        ie_row.setSpacing(6)
+        self._btn_import = QPushButton("Import")
+        self._btn_import.setFixedHeight(28)
+        self._btn_import.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_import.setStyleSheet(
+            f"QPushButton {{ background: transparent; color: {TEXT_SECONDARY};"
+            f" border: 1px solid {BORDER}; border-radius: 4px;"
+            f" font-size: 11px; padding: 4px 10px; }}"
+            f"QPushButton:hover {{ color: {TEXT_PRIMARY}; border-color: {TEXT_SECONDARY}; }}")
+        self._btn_import.clicked.connect(self._on_import)
+        self._btn_export = QPushButton("Export")
+        self._btn_export.setFixedHeight(28)
+        self._btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_export.setStyleSheet(
+            f"QPushButton {{ background: transparent; color: {TEXT_SECONDARY};"
+            f" border: 1px solid {BORDER}; border-radius: 4px;"
+            f" font-size: 11px; padding: 4px 10px; }}"
+            f"QPushButton:hover {{ color: {TEXT_PRIMARY}; border-color: {TEXT_SECONDARY}; }}")
+        self._btn_export.clicked.connect(self._on_export)
+        ie_row.addWidget(self._btn_import)
+        ie_row.addWidget(self._btn_export)
+        ie_row.addStretch()
+        layout.addLayout(ie_row)
 
     def eventFilter(self, obj, event) -> bool:
         if obj is self.list_widget.viewport():
@@ -388,6 +446,39 @@ class VMListPanel(QFrame):
                     item.setData(NET_BAR_ROLE, net)
                 break
         self.list_widget.viewport().update()
+
+    def _on_export(self) -> None:
+        row = self.list_widget.currentRow()
+        if row < 0 or row >= len(self.configs):
+            return
+        cfg = self.configs[row]
+        default_name = f"{cfg.vm_id}.ivault"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export VM", str(Path.home() / default_name),
+            "Icosele Vault Archive (*.ivault);;All Files (*)")
+        if not path:
+            return
+        try:
+            export_vm(cfg, path)
+            QMessageBox.information(self, "Export Complete",
+                                    f"VM exported to:\n{path}")
+        except Exception as exc:
+            QMessageBox.warning(self, "Export Failed", str(exc))
+
+    def _on_import(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Import VM", str(Path.home()),
+            "Icosele Vault Archive (*.ivault);;Zip Files (*.zip);;All Files (*)")
+        if not path:
+            return
+        try:
+            cfg = import_vm(path)
+            cfg.save()
+            self.vm_imported.emit(cfg)
+            QMessageBox.information(self, "Import Complete",
+                                    f"VM \"{cfg.name}\" imported successfully.")
+        except Exception as exc:
+            QMessageBox.warning(self, "Import Failed", str(exc))
 
     def pulse_animation(self) -> None:
         self._delegate.advance_pulse()

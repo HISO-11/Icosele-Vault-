@@ -462,7 +462,7 @@ class VMEditDialog(QDialog):
             LABEL_STYLE, TEXT_MUTED, TEXT_PRIMARY, WARNING,
             primary_btn_style, secondary_btn_style,
         )
-        from config.vm_config import NET_MODE_NAT, NET_MODE_BRIDGE, NET_MODE_HOSTONLY
+        from config.vm_config import NET_MODE_NAT, NET_MODE_BRIDGE, NET_MODE_HOSTONLY, NET_MODE_NONE
 
         self.setWindowTitle(f"Edit \u2014 {self.config.name}")
         self.setFixedSize(500, 480)
@@ -514,6 +514,7 @@ class VMEditDialog(QDialog):
             ("NAT (User mode)", NET_MODE_NAT),
             ("Bridged", NET_MODE_BRIDGE),
             ("Host-only", NET_MODE_HOSTONLY),
+            ("None", NET_MODE_NONE),
         ]
         for label, key in modes:
             self._net.addItem(label, key)

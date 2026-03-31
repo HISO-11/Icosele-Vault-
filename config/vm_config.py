@@ -68,6 +68,7 @@ def validate_config_data(data: dict, source: str = "<unknown>") -> bool:
 NET_MODE_NAT = "nat"
 NET_MODE_BRIDGE = "bridge"
 NET_MODE_HOSTONLY = "hostonly"
+NET_MODE_NONE = "none"
 
 
 @dataclass
@@ -126,11 +127,13 @@ class VMConfig:
         return Path("/dev/vhost-net").exists()
 
     def net_args(self) -> list[str]:
+        if self.net_mode == NET_MODE_NONE:
+            return []
         vhost = ",vhost=on" if self.vhost_net_available() else ""
         if self.net_mode == NET_MODE_BRIDGE:
-            iface = self.net_bridge_iface or "br0"
+            iface = self.net_bridge_iface or "virbr0"
             return [
-                "-netdev", f"tap,id=net0,br={iface}{vhost}",
+                "-netdev", f"bridge,id=net0,br={iface}",
                 "-device", "virtio-net-pci,netdev=net0",
             ]
         if self.net_mode == NET_MODE_HOSTONLY:
@@ -149,12 +152,19 @@ class VMConfig:
     def usb_args(self) -> list[str]:
         if not self.usb_devices:
             return []
-        args = ["-usb"]
+        args = ["-device", "usb-ehci,id=ehci-usb", "-usb"]
         for dev in self.usb_devices:
+            vid = dev.get("vendor_id", "")
+            pid = dev.get("product_id", "")
             bus = dev.get("bus", "")
             addr = dev.get("addr", "")
-            dev_id = f"usb-host-{bus}-{addr}"
-            if bus and addr:
+            if vid and pid:
+                args += [
+                    "-device",
+                    f"usb-host,vendorid=0x{vid},productid=0x{pid}",
+                ]
+            elif bus and addr:
+                dev_id = f"usb-host-{bus}-{addr}"
                 args += [
                     "-device",
                     f"usb-host,hostbus={bus},hostaddr={addr},id={dev_id}",
@@ -179,6 +189,21 @@ class VMConfig:
             args += ["-display", backend]
 
         args += ["-vga", vga]
+        return args
+
+    def shared_folder_args(self) -> list[str]:
+        args: list[str] = []
+        for i, f in enumerate(self.shared_folders):
+            host_path = f.get("host_path", "")
+            mount_tag = f.get("mount_tag", "shared")
+            if not host_path:
+                continue
+            ro = ",readonly=on" if f.get("readonly") else ""
+            args += [
+                "-virtfs",
+                f"local,path={host_path},mount_tag={mount_tag},"
+                f"security_model=passthrough,id=fsdev{i}{ro}",
+            ]
         return args
 
     def gpu_args(self) -> list[str]:

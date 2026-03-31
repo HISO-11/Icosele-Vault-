@@ -185,6 +185,7 @@ class ShareServer:
 class VMSharePanel(QFrame):
     share_started = Signal()
     share_stopped = Signal()
+    vnc_config_changed = Signal(bool, str)  # enabled, password
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -266,6 +267,56 @@ class VMSharePanel(QFrame):
         self._qr = _QRSmall()
         self._qr.hide()
         lay.addWidget(self._qr)
+
+        # ── VNC Sharing Section ──
+        lay.addWidget(QLabel("VNC SHARING", styleSheet=SECTION_LABEL_STYLE))
+        vnc_desc = QLabel(
+            "Enable VNC to let colleagues connect with any VNC client. "
+            "Add -vnc args before starting the VM.")
+        vnc_desc.setWordWrap(True)
+        vnc_desc.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px; background: transparent;")
+        lay.addWidget(vnc_desc)
+
+        vnc_btn_row = QHBoxLayout()
+        self._btn_vnc_enable = QPushButton("Enable VNC Sharing")
+        self._btn_vnc_enable.setStyleSheet(save_btn_style())
+        self._btn_vnc_enable.setFixedHeight(32)
+        self._btn_vnc_enable.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_vnc_enable.clicked.connect(self._on_enable_vnc)
+        self._btn_vnc_disable = QPushButton("Disable VNC")
+        self._btn_vnc_disable.setStyleSheet(subtle_btn_style())
+        self._btn_vnc_disable.setFixedHeight(32)
+        self._btn_vnc_disable.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_vnc_disable.clicked.connect(self._on_disable_vnc)
+        self._btn_vnc_disable.hide()
+        vnc_btn_row.addWidget(self._btn_vnc_enable)
+        vnc_btn_row.addWidget(self._btn_vnc_disable)
+        vnc_btn_row.addStretch()
+        lay.addLayout(vnc_btn_row)
+
+        self._vnc_info = QFrame()
+        self._vnc_info.setStyleSheet(
+            f"background-color: {BG_CARD}; border: 1px solid {BORDER}; border-radius: 6px;")
+        self._vnc_info.hide()
+        vnc_lay = QVBoxLayout(self._vnc_info)
+        vnc_lay.setContentsMargins(14, 12, 14, 12)
+        vnc_lay.setSpacing(4)
+        self._vnc_conn_label = QLabel("")
+        self._vnc_conn_label.setStyleSheet(
+            f"color: {TEXT_PRIMARY}; font-size: 12px; background: transparent;")
+        self._vnc_conn_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        vnc_lay.addWidget(self._vnc_conn_label)
+        self._vnc_pass_label = QLabel("")
+        self._vnc_pass_label.setStyleSheet(
+            f"color: {ACCENT}; font-size: 14px; font-weight: 700;"
+            f" font-family: monospace; background: transparent;")
+        self._vnc_pass_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        vnc_lay.addWidget(self._vnc_pass_label)
+        lay.addWidget(self._vnc_info)
+
+        self._vnc_enabled = False
+        self._vnc_password = ""
+
         lay.addStretch()
 
     def set_vm(self, vm_id: str):
@@ -325,6 +376,32 @@ class VMSharePanel(QFrame):
 
     def _update_count(self):
         self._clients_label.setText(f"Connected clients: {self._server.client_count}")
+
+    def _on_enable_vnc(self):
+        import secrets
+        self._vnc_password = secrets.token_hex(4)
+        self._vnc_enabled = True
+        ip = _get_host_ip()
+        self._vnc_conn_label.setText(f"Connect via VNC: {ip}:5901")
+        self._vnc_pass_label.setText(f"Password: {self._vnc_password}")
+        self._vnc_info.show()
+        self._btn_vnc_enable.hide()
+        self._btn_vnc_disable.show()
+        self.vnc_config_changed.emit(True, self._vnc_password)
+
+    def _on_disable_vnc(self):
+        self._vnc_enabled = False
+        self._vnc_password = ""
+        self._vnc_info.hide()
+        self._btn_vnc_enable.show()
+        self._btn_vnc_disable.hide()
+        self.vnc_config_changed.emit(False, "")
+
+    def get_vnc_args(self) -> list[str]:
+        """Return QEMU args for VNC sharing if enabled."""
+        if self._vnc_enabled and self._vnc_password:
+            return ["-vnc", ":1,password=on"]
+        return []
 
 
 class JoinShareDialog(QDialog):

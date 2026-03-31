@@ -18,12 +18,12 @@ from app.ui.theme import (
     STOP_RED, TEXT_MUTED, TEXT_ON_ACCENT, TEXT_PRIMARY, TEXT_SECONDARY,
     primary_btn_style, secondary_btn_style, subtle_btn_style,
 )
-from config.vm_config import NET_MODE_BRIDGE, NET_MODE_HOSTONLY, NET_MODE_NAT, VMConfig
+from config.vm_config import NET_MODE_BRIDGE, NET_MODE_HOSTONLY, NET_MODE_NAT, NET_MODE_NONE, VMConfig
 
 log = logging.getLogger(__name__)
 
-MODE_LABELS = {NET_MODE_NAT: "NAT (User mode)", NET_MODE_BRIDGE: "Bridged", NET_MODE_HOSTONLY: "Host-only"}
-MODE_KEYS = [NET_MODE_NAT, NET_MODE_BRIDGE, NET_MODE_HOSTONLY]
+MODE_LABELS = {NET_MODE_NAT: "NAT (User mode)", NET_MODE_BRIDGE: "Bridged", NET_MODE_HOSTONLY: "Host-only", NET_MODE_NONE: "None"}
+MODE_KEYS = [NET_MODE_NAT, NET_MODE_BRIDGE, NET_MODE_HOSTONLY, NET_MODE_NONE]
 
 VIRTIO_WIN_URL = "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso"
 
@@ -70,11 +70,10 @@ TEMPLATES = {
 }
 
 ISO_SOURCES = [
-    ("Ubuntu 24.04 LTS", "https://releases.ubuntu.com/24.04/ubuntu-24.04.2-desktop-amd64.iso"),
-    ("Ubuntu 22.04 LTS", "https://releases.ubuntu.com/22.04/ubuntu-22.04.5-desktop-amd64.iso"),
-    ("Debian 12", "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.10.0-amd64-netinst.iso"),
-    ("Fedora 39", "https://download.fedoraproject.org/pub/fedora/linux/releases/39/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-39-1.5.iso"),
-    ("Arch Linux", "https://geo.mirror.pkgbuild.com/iso/latest/archlinux-x86_64.iso"),
+    ("Ubuntu 24.04 LTS", "https://releases.ubuntu.com/24.04/ubuntu-24.04.1-desktop-amd64.iso"),
+    ("Debian 12", "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso"),
+    ("Fedora 40", "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-40-1.14.iso"),
+    ("Android-x86 9.0", "https://sourceforge.net/projects/android-x86/files/Release%209.0/android-x86_64-9.0-r2.iso"),
 ]
 
 

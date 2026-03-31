@@ -167,6 +167,15 @@ def _find_ovmf_vars() -> str | None:
     return None
 
 
+def setup_guest_agent(vm_name: str) -> list[str]:
+    """Return QEMU args to attach a guest agent virtio-serial channel."""
+    return [
+        "-device", "virtio-serial-pci",
+        "-chardev", f"socket,path=/tmp/qga_{vm_name}.sock,server=on,wait=off,id=qga0",
+        "-device", "virtserialport,chardev=qga0,name=org.qemu.guest_agent.0",
+    ]
+
+
 class QemuProcess:
     def __init__(self, config: VMConfig) -> None:
         self.config = config
@@ -411,6 +420,12 @@ class QemuProcess:
         if not has_usb:
             args += ["-device", "usb-ehci,id=ehci", "-device", "usb-tablet,bus=ehci.0"]
 
+        # Guest Agent — virtio-serial + chardev socket for qemu-guest-agent
+        args += setup_guest_agent(self.config.vm_id)
+
+        # Memory Ballooning — dynamic memory adjustment
+        args += ["-device", "virtio-balloon-pci"]
+
         # ── TPM + UEFI (Windows 11 via template extra_args) ──
         needs_tpm = _needs_swtpm(extra)
         if needs_tpm:
@@ -472,16 +487,19 @@ class QemuProcess:
             drive_idx += 1
 
         args += ["-boot", "order=dc"]
-        args += ["-netdev", "user,id=net0", "-device", "e1000,netdev=net0"]
+        args += self.config.net_args()
+
+        # Shared folders (virtio-9p)
+        args += self.config.shared_folder_args()
 
         # ── Display — platform and OS aware ──
         if _sys.platform == "darwin":
             args += ["-vga", "virtio", "-display", "cocoa"]
         else:
-            args += ["-vga", "virtio", "-display", "gtk,gl=on"]
+            args += ["-vga", "virtio", "-display", "gtk,zoom-to-fit=on"]
 
         # ── Strip args from extra that build_args already handles ──
-        _handled = {"-machine", "-cpu", "-vga", "-display", "-boot"}
+        _handled = {"-machine", "-cpu", "-vga", "-display", "-boot", "-netdev"}
         cleaned: list[str] = []
         skip_next = False
         for i, a in enumerate(extra):

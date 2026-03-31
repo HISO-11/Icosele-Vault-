@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import os
 import platform
+import subprocess
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget,
+    QCheckBox, QFrame, QHBoxLayout, QLabel, QMessageBox,
+    QPushButton, QSpinBox, QVBoxLayout, QWidget,
 )
 
 from app.ui.theme import (
@@ -104,6 +106,47 @@ class DiskPerfPanel(QFrame):
             f" border-radius: 6px; padding: 10px 12px;")
         layout.addWidget(self._args_preview)
 
+        # ── Disk Expansion Section ──
+        layout.addWidget(QLabel("DISK EXPANSION", styleSheet=SECTION_LABEL_STYLE))
+
+        expand_desc = QLabel(
+            "Expand the VM's disk image. The VM must be stopped. "
+            "You may also need to resize the partition inside the guest OS.")
+        expand_desc.setWordWrap(True)
+        expand_desc.setStyleSheet(
+            f"color: {TEXT_SECONDARY}; font-size: 12px; background: transparent;")
+        layout.addWidget(expand_desc)
+
+        expand_row = QHBoxLayout()
+        expand_row.setSpacing(8)
+        self._expand_spin = QSpinBox()
+        self._expand_spin.setRange(1, 1024)
+        self._expand_spin.setValue(10)
+        self._expand_spin.setSuffix(" GB")
+        self._expand_spin.setStyleSheet(
+            f"QSpinBox {{ background-color: {BG_CARD}; color: {TEXT_PRIMARY};"
+            f" border: 1px solid {BORDER}; border-radius: 4px;"
+            f" padding: 4px 8px; font-size: 12px; }}")
+        self._expand_spin.setFixedWidth(100)
+        expand_row.addWidget(self._expand_spin)
+        self._btn_expand = QPushButton("Expand Disk")
+        self._btn_expand.setFixedHeight(32)
+        self._btn_expand.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_expand.setStyleSheet(
+            f"QPushButton {{ background-color: {ACCENT}; color: #fff;"
+            f" border: none; border-radius: 6px; padding: 6px 16px;"
+            f" font-size: 12px; font-weight: 600; font-family: {FONT_FAMILY}; }}"
+            f"QPushButton:hover {{ opacity: 0.9; }}")
+        self._btn_expand.clicked.connect(self._on_expand_disk)
+        expand_row.addWidget(self._btn_expand)
+        expand_row.addStretch()
+        layout.addLayout(expand_row)
+
+        self._expand_status = QLabel("")
+        self._expand_status.setStyleSheet(
+            f"color: {TEXT_MUTED}; font-size: 11px; background: transparent;")
+        layout.addWidget(self._expand_status)
+
         layout.addStretch()
 
         self.io_uring_check.toggled.connect(self._on_toggled)
@@ -152,3 +195,30 @@ class DiskPerfPanel(QFrame):
                 f"-drive file=...,format={fmt},if=virtio,aio={aio}")
         else:
             self._args_preview.setText("(no disk attached)")
+
+    def _on_expand_disk(self) -> None:
+        disk_path = getattr(self, "_disk_path", "")
+        if not disk_path or not os.path.exists(disk_path):
+            self._expand_status.setText("No disk image found.")
+            return
+        size_gb = self._expand_spin.value()
+        reply = QMessageBox.question(
+            self, "Expand Disk",
+            f"Expand disk by +{size_gb}G?\n{disk_path}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            result = subprocess.run(
+                ["qemu-img", "resize", disk_path, f"+{size_gb}G"],
+                capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                self._expand_status.setText(
+                    f"Disk expanded by +{size_gb}G successfully.")
+            else:
+                self._expand_status.setText(
+                    f"Error: {result.stderr.strip()}")
+        except FileNotFoundError:
+            self._expand_status.setText("qemu-img not found.")
+        except subprocess.TimeoutExpired:
+            self._expand_status.setText("Timeout expanding disk.")
