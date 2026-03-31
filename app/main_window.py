@@ -9,7 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QKeySequence, QLinearGradient, QPainter, QPixmap, QShortcut
 from PySide6.QtWidgets import (
-    QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
+    QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
     QStackedWidget, QVBoxLayout, QWidget,
 )
 
