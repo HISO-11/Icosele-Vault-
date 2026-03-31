@@ -48,11 +48,11 @@ from app.ui.theme import (
 )
 
 
-class AccentBar(QWidget):
+class AccentBar(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
+        self.setObjectName("accentBar")
         self.setFixedHeight(3)
-        self.setStyleSheet("background-color: #1FB8F4;")
 
 
 class MainWindow(QMainWindow):
@@ -177,6 +177,7 @@ class MainWindow(QMainWindow):
             f"* {{ font-family: {FONT_FAMILY}; }}"
             f" QMainWindow {{ {main_bg}; color: {TEXT_PRIMARY}; }}"
             f" QFrame {{ background: transparent; border: none; }}"
+            f" #accentBar {{ background-color: #1FB8F4; border: none; }}"
             f" QLabel {{ color: {TEXT_PRIMARY}; background: transparent; }}"
             f" QLineEdit {{ color: {TEXT_PRIMARY}; }}"
             f" QScrollBar:vertical {{ width: 4px; background: transparent; border: none; }}"
