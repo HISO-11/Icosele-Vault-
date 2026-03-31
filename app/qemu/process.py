@@ -97,6 +97,7 @@ _PERSISTENT_BASE = Path.home() / ".icosele-vault"
 # OVMF firmware paths — secboot variants preferred for Secure Boot.
 _OVMF_CODE_PATHS = [
     # Manjaro / Arch (edk2-ovmf) — 4M variants
+    "/usr/share/OVMF/x64/OVMF_CODE.4m.fd",
     "/usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd",
     "/usr/share/edk2/x64/OVMF_CODE.4m.fd",
     # Debian / Ubuntu
@@ -115,6 +116,7 @@ _OVMF_CODE_PATHS = [
 
 _OVMF_VARS_PATHS = [
     # Manjaro / Arch
+    "/usr/share/OVMF/x64/OVMF_VARS.4m.fd",
     "/usr/share/edk2/x64/OVMF_VARS.4m.fd",
     # Debian / Ubuntu
     "/usr/share/OVMF/OVMF_VARS.fd",
@@ -372,8 +374,22 @@ class QemuProcess:
         if not has_machine:
             args += ["-machine", "pc"]
 
-        # TPM support: rewrite swtpm socket path or strip TPM args
-        if _needs_swtpm(extra):
+        # TPM + UEFI support for Windows 11
+        needs_tpm = _needs_swtpm(extra)
+        if needs_tpm:
+            # OVMF UEFI firmware (pflash, separate from IDE drives)
+            ovmf_code = _find_ovmf_code()
+            ovmf_vars = self._prepare_ovmf_vars()
+            if ovmf_code and ovmf_vars:
+                args += [
+                    "-drive", f"if=pflash,format=raw,readonly=on,unit=0,file={ovmf_code}",
+                    "-drive", f"if=pflash,format=raw,unit=1,file={ovmf_vars}",
+                ]
+                log.info("UEFI firmware: code=%s vars=%s", ovmf_code, ovmf_vars)
+            else:
+                log.warning("OVMF not found — UEFI/Secure Boot unavailable")
+
+            # Rewrite swtpm socket path or strip TPM args
             if _swtpm_available():
                 extra = [
                     self._swtpm_sock_path if a == "swtpm-sock" else
