@@ -7,8 +7,18 @@ import re
 import subprocess
 import sys
 
+if sys.platform == "win32":
+    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+    os.environ["QT_SCALE_FACTOR"] = "1"
+
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
+
+if sys.platform == "win32":
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
 
 from app.main_window import MainWindow
 from config.vm_config import VMConfig
@@ -101,6 +111,20 @@ def main() -> None:
     if os.path.exists(icon_path):
         window.setWindowIcon(QIcon(icon_path))
     window.show()
+
+    if sys.platform == "win32":
+        try:
+            from win32mica import ApplyMica, MicaTheme, MicaStyle
+            hwnd = int(window.winId())
+            ApplyMica(
+                hwnd=hwnd,
+                Theme=MicaTheme.DARK,
+                Style=MicaStyle.DEFAULT,
+            )
+            window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+            log.info("[Mica] Windows Mica applied successfully")
+        except Exception as exc:
+            log.info("[Mica] Failed: %s", exc)
 
     sys.exit(app.exec())
 
