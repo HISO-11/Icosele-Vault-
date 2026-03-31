@@ -372,21 +372,8 @@ class QemuProcess:
         if not has_machine:
             args += ["-machine", "pc"]
 
-        # OVMF/UEFI firmware (needed for TPM / Secure Boot)
-        needs_tpm = _needs_swtpm(extra)
-        if needs_tpm:
-            ovmf_code = _find_ovmf_code()
-            ovmf_vars = self._prepare_ovmf_vars()
-            if ovmf_code and ovmf_vars:
-                args += [
-                    "-drive", f"if=pflash,format=raw,readonly=on,file={ovmf_code}",
-                    "-drive", f"if=pflash,format=raw,file={ovmf_vars}",
-                ]
-                log.info("UEFI firmware: %s", ovmf_code)
-            else:
-                log.warning("OVMF not found — Secure Boot unavailable")
-
-            # Rewrite TPM chardev path to use per-VM persistent socket
+        # TPM support: rewrite swtpm socket path or strip TPM args
+        if _needs_swtpm(extra):
             if _swtpm_available():
                 extra = [
                     self._swtpm_sock_path if a == "swtpm-sock" else

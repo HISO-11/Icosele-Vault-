@@ -46,7 +46,7 @@ TEMPLATES = {
     },
     "win11": {
         "label": "Windows 11",
-        "desc": "q35, 8 GB RAM, 64 GB disk, TPM 2.0, Secure Boot",
+        "desc": "q35, 8 GB RAM, 64 GB disk, Hyper-V (use Win10 ISO if TPM issues)",
         "cpu": 4, "ram": 8192, "disk": "64G",
         "windows": True,
         "extra_args": [
@@ -54,10 +54,6 @@ TEMPLATES = {
             "-device", "usb-ehci,id=usb-bus",
             "-device", "usb-tablet,bus=usb-bus.0",
             "-cpu", "host,hv_relaxed,hv_vapic,hv_spinlocks=0x1fff",
-            "-chardev", "socket,id=chrtpm,path=swtpm-sock",
-            "-tpmdev", "emulator,id=tpm0,chardev=chrtpm",
-            "-device", "tpm-tis,tpmdev=tpm0",
-            "-global", "driver=cfi.pflash01,property=secure,value=on",
         ],
     },
     "sandbox": {
