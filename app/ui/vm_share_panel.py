@@ -332,7 +332,7 @@ class VMSharePanel(QFrame):
         self._code_label.setText(code)
         self._ip_label.setText(f"Connect to {ip}:{port}")
         self._info_card.show()
-        self._qr.set_data(f"icosele-vault-share://{ip}:{port}/{code}")
+        self._qr.set_data(f"icosele-vm-share://{ip}:{port}/{code}")
         self._qr.show()
         self._btn_start.hide()
         self._btn_stop.show()
@@ -366,7 +366,7 @@ class VMSharePanel(QFrame):
         qmp = self._qmp_fn(self._vm_id)
         if not qmp or not qmp.connected:
             return
-        thumb_path = f"/tmp/icosele-vault/{self._vm_id}/share_frame.ppm"
+        thumb_path = f"/tmp/icosele-vm/{self._vm_id}/share_frame.ppm"
         try:
             qmp.execute("screendump", {"filename": thumb_path})
             data = Path(thumb_path).read_bytes()

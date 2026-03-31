@@ -175,7 +175,7 @@ class RecordingPanel(QFrame):
         qmp = self._qmp_fn(self._vm_id)
         if not qmp or not qmp.connected:
             return
-        frame_path = f"/tmp/icosele-vault/{self._vm_id}/rec_frame.ppm"
+        frame_path = f"/tmp/icosele-vm/{self._vm_id}/rec_frame.ppm"
         try:
             qmp.execute("screendump", {"filename": frame_path})
             data = Path(frame_path).read_bytes()

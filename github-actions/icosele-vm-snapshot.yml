@@ -1,7 +1,7 @@
-# Icosele Vault — Release Snapshot Workflow
+# Icosele VM — Release Snapshot Workflow
 # Captures known-good VM states when a GitHub release is created.
 
-name: Icosele Vault Release Snapshot
+name: Icosele VM Release Snapshot
 
 on:
   release:

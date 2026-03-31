@@ -31,7 +31,7 @@ class PluginPanel(QFrame):
 
         lay.addWidget(QLabel("PLUGINS", styleSheet=SECTION_LABEL_STYLE))
         desc = QLabel(
-            "Third-party plugins extend Icosele Vault. "
+            "Third-party plugins extend Icosele VM. "
             "See plugins/PLUGIN_SDK.md for the developer guide.")
         desc.setWordWrap(True)
         desc.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px; background: transparent;")

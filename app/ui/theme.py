@@ -1,4 +1,4 @@
-"""Icosele Vault design tokens — dark palette only."""
+"""Icosele VM design tokens — dark palette only."""
 
 FONT_FAMILY = '"Inter", "SF Pro Display", "Segoe UI", sans-serif'
 

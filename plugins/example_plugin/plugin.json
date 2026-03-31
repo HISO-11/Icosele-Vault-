@@ -1,7 +1,7 @@
 {
   "name": "Example Logger",
   "version": "1.0",
-  "author": "Icosele Vault Team",
+  "author": "Icosele VM Team",
   "description": "Logs VM events to a text file — serves as the SDK example.",
   "entry": "main.py",
   "hooks": ["on_vm_start", "on_vm_stop", "on_snapshot_created"]

@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=Icosele Vault
+Name=Icosele VM
 Exec=/home/jl/qemu-gui/.venv/bin/python /home/jl/qemu-gui/main.py
 Icon=/home/jl/qemu-gui/assets/icon.png
 Type=Application
 Categories=System;Emulator;
-StartupWMClass=icosele-vault
+StartupWMClass=icosele-vm
 Terminal=false

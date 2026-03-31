@@ -1,12 +1,12 @@
-# Icosele Vault — CI Test Workflow
+# Icosele VM — CI Test Workflow
 # Copy this file to your repo's .github/workflows/ directory.
 #
 # Prerequisites:
-# - Icosele Vault running on a self-hosted runner with API enabled
+# - Icosele VM running on a self-hosted runner with API enabled
 # - GitHub secret ICOSELE_VAULT_API_KEY set with your API key
-# - VM already created in Icosele Vault with a known name
+# - VM already created in Icosele VM with a known name
 
-name: Icosele Vault Test
+name: Icosele VM Test
 
 on:
   push:

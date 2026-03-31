@@ -33,7 +33,7 @@ _HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Icosele Vault Console</title>
+<title>Icosele VM Console</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#1e1e2e;color:#cdd6f4;font-family:'Inter','Segoe UI',sans-serif;font-size:14px}
@@ -65,7 +65,7 @@ select{background:#313244;color:#cdd6f4;border:1px solid #45475a;padding:6px 10p
 </head>
 <body>
 <div class="top">
-<h1>ICOSELE VAULT</h1>
+<h1>ICOSELE VM</h1>
 <div class="nav">
 <a href="#dashboard" onclick="go('dashboard')">Dashboard</a>
 <a href="#vms" onclick="go('vms')">VMs</a>

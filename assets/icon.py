@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Icosele Vault app icons programmatically."""
+"""Generate Icosele VM app icons programmatically."""
 
 from pathlib import Path
 from PIL import Image, ImageDraw

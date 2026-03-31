@@ -1,4 +1,4 @@
-// Icosele Vault VSCode Extension
+// Icosele VM VSCode Extension
 // Communicates with the local REST API at localhost:47820
 // Uses only built-in Node.js http module — no npm dependencies.
 
@@ -32,7 +32,7 @@ function apiRequest(path, method, body) {
         });
         req.on('error', (err) => {
             reject(new Error(
-                'Cannot connect to Icosele Vault. ' +
+                'Cannot connect to Icosele VM. ' +
                 'Make sure the app is running and the REST API is enabled on port 47820.'
             ));
         });
@@ -110,15 +110,15 @@ async function updateStatusBar() {
 
 function activate(context) {
     context.subscriptions.push(
-        vscode.commands.registerCommand('icosele-vault.listVMs', listVMs),
-        vscode.commands.registerCommand('icosele-vault.startVM', startVM),
-        vscode.commands.registerCommand('icosele-vault.stopVM', stopVM),
-        vscode.commands.registerCommand('icosele-vault.takeSnapshot', takeSnapshot),
-        vscode.commands.registerCommand('icosele-vault.openDashboard', openDashboard),
-        vscode.commands.registerCommand('icosele-vault.status', updateStatusBar),
+        vscode.commands.registerCommand('icosele-vm.listVMs', listVMs),
+        vscode.commands.registerCommand('icosele-vm.startVM', startVM),
+        vscode.commands.registerCommand('icosele-vm.stopVM', stopVM),
+        vscode.commands.registerCommand('icosele-vm.takeSnapshot', takeSnapshot),
+        vscode.commands.registerCommand('icosele-vm.openDashboard', openDashboard),
+        vscode.commands.registerCommand('icosele-vm.status', updateStatusBar),
     );
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.command = 'icosele-vault.listVMs';
+    statusBarItem.command = 'icosele-vm.listVMs';
     context.subscriptions.push(statusBarItem);
     updateStatusBar();
     setInterval(updateStatusBar, 30000);

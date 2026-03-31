@@ -23,7 +23,7 @@ jobs:
       - name: Build with PyInstaller
         run: |
           pyinstaller --onefile --windowed \
-            --name IcoseleVault \
+            --name IcoseleVM \
             --add-data "assets:assets" \
             --add-data "data:data" \
             main.py
@@ -31,10 +31,10 @@ jobs:
       - name: Zip .app bundle
         run: |
           cd dist
-          zip -r IcoseleVault-macOS.zip IcoseleVault.app || zip -r IcoseleVault-macOS.zip IcoseleVault
+          zip -r IcoseleVM-macOS.zip IcoseleVM.app || zip -r IcoseleVM-macOS.zip IcoseleVM
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Icosele Vault macOS
-          path: dist/IcoseleVault-macOS.zip
+          name: Icosele VM macOS
+          path: dist/IcoseleVM-macOS.zip

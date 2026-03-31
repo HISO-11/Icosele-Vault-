@@ -16,7 +16,7 @@ from app.ui.theme import (
     primary_btn_style, secondary_btn_style, subtle_btn_style,
 )
 
-_SETTINGS_DIR = Path.home() / ".icosele-vault"
+_SETTINGS_DIR = Path.home() / ".icosele-vm"
 _FIRST_RUN_FLAG = _SETTINGS_DIR / ".first_run_done"
 
 
@@ -83,7 +83,7 @@ class FirstRunWizard(QDialog):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("Icosele Vault — First Run Setup")
+        self.setWindowTitle("Icosele VM — First Run Setup")
         self.setFixedSize(520, 440)
         self.setStyleSheet(f"background-color: {BG_PANEL}; color: {TEXT_PRIMARY};")
 
@@ -91,7 +91,7 @@ class FirstRunWizard(QDialog):
         layout.setContentsMargins(28, 24, 28, 20)
         layout.setSpacing(12)
 
-        title = QLabel("Welcome to Icosele Vault")
+        title = QLabel("Welcome to Icosele VM")
         title.setStyleSheet(
             f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: 700;"
             f" background: transparent; font-family: {FONT_FAMILY};")
@@ -156,7 +156,7 @@ class FirstRunWizard(QDialog):
                 f" background: transparent; font-family: {FONT_FAMILY};")
             layout.addWidget(msg)
         else:
-            msg = QLabel("Install missing dependencies above, then restart Icosele Vault.\n"
+            msg = QLabel("Install missing dependencies above, then restart Icosele VM.\n"
                          "You can still use the app — features requiring missing deps will be limited.")
             msg.setWordWrap(True)
             msg.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px; background: transparent;")

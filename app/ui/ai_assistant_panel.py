@@ -23,7 +23,7 @@ from app.ui.theme import (
 log = logging.getLogger(__name__)
 
 _SYSTEM_PROMPT = (
-    "You are an AI assistant embedded in Icosele Vault, a VM management "
+    "You are an AI assistant embedded in Icosele VM, a VM management "
     "application. You help users manage their virtual machines. You have "
     "access to the following VM data: {vm_list_json}. When the user asks "
     "to perform an action, respond with a JSON block in this exact format: "

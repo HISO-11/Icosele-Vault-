@@ -65,7 +65,7 @@ def _send(url: str, payload: dict) -> tuple[int, bool]:
     body = json.dumps(payload).encode()
     req = urllib.request.Request(
         url, data=body,
-        headers={"Content-Type": "application/json", "User-Agent": "IcoseleVault/1.0"},
+        headers={"Content-Type": "application/json", "User-Agent": "IcoseleVM/1.0"},
         method="POST")
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -126,7 +126,7 @@ def send_test(url: str, name: str = "test") -> tuple[int, bool]:
         "vm_name": "",
         "vm_id": "",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "details": {"message": "Test webhook from Icosele Vault"},
+        "details": {"message": "Test webhook from Icosele VM"},
     }
     status, ok = _send(url, payload)
     _append_log({

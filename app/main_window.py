@@ -68,6 +68,7 @@ class MainWindow(QMainWindow):
         self._instant_boot_saved: set[str] = set()
         self._quarantined: dict[str, bool] = {}
         self._auto_snapshot_timers: dict[str, QTimer] = {}
+        self._clipboard_syncs: dict[str, object] = {}
 
         self._vm_start_times: dict[str, float] = {}
         self._vm_start_disk_sizes: dict[str, int] = {}
@@ -154,7 +155,7 @@ class MainWindow(QMainWindow):
             log.warning("Glassmorphism: macOS setup failed (%s), using solid bg", exc)
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("Icosele Vault")
+        self.setWindowTitle("Icosele VM")
         self.setMinimumSize(1200, 700)
 
         glass = self._is_glass_platform()
@@ -845,6 +846,12 @@ class MainWindow(QMainWindow):
         # Auto-snapshot scheduling
         if cfg.auto_snapshot:
             self._start_auto_snapshot(cfg.vm_id)
+        # Clipboard sync
+        if cfg.clipboard_sync:
+            from app.clipboard_sync import ClipboardSync
+            sync = ClipboardSync(cfg.vm_id)
+            sync.start()
+            self._clipboard_syncs[cfg.vm_id] = sync
 
     def _start_auto_snapshot(self, vm_id: str) -> None:
         if vm_id in self._auto_snapshot_timers:
@@ -894,6 +901,9 @@ class MainWindow(QMainWindow):
         if timer:
             timer.stop()
         self._stop_auto_snapshot(cfg.vm_id)
+        sync = self._clipboard_syncs.pop(cfg.vm_id, None)
+        if sync:
+            sync.stop()
         self.vm_controls.set_buttons_for_state("stopped")
         self.vm_controls.snapshot_panel.set_snapshots([])
         self.vm_controls.snap_dag_panel.set_snapshots([])
@@ -946,7 +956,7 @@ class MainWindow(QMainWindow):
         qmp = self._qmp_conns.get(cfg.vm_id)
         if not qmp or not qmp.connected:
             return
-        snap_dir = Path.home() / ".icosele-vault" / "snapshots" / cfg.vm_id
+        snap_dir = Path.home() / ".icosele-vm" / "snapshots" / cfg.vm_id
         snap_dir.mkdir(parents=True, exist_ok=True)
         screenshot_path = str(snap_dir / f"{snapshot_name}.ppm")
         try:
@@ -1245,7 +1255,7 @@ class MainWindow(QMainWindow):
             qmp = self._qmp_conns.get(cfg.vm_id)
             if not qmp or not qmp.connected:
                 continue
-            thumb_path = f"/tmp/icosele-vault/{cfg.vm_id}/thumb.ppm"
+            thumb_path = f"/tmp/icosele-vm/{cfg.vm_id}/thumb.ppm"
             try:
                 qmp.execute("screendump", {"filename": thumb_path})
             except QMPError:

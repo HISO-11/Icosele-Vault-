@@ -1,6 +1,6 @@
 {
   "provider": {
-    "name": "icosele_vault",
+    "name": "icosele_vm",
     "attributes": {
       "api_key": {"type": "string", "required": true, "sensitive": true},
       "host": {"type": "string", "default": "localhost"},
@@ -8,7 +8,7 @@
     }
   },
   "resources": {
-    "icosele_vault_vm": {
+    "icosele_vm_vm": {
       "description": "Manages a virtual machine",
       "attributes": {
         "name": {"type": "string", "required": true},
@@ -21,7 +21,7 @@
       },
       "computed": ["id", "vm_id", "status", "disk_path"]
     },
-    "icosele_vault_snapshot": {
+    "icosele_vm_snapshot": {
       "description": "Manages a VM snapshot",
       "attributes": {
         "vm_id": {"type": "string", "required": true},
@@ -30,14 +30,14 @@
       },
       "computed": ["id", "created_at", "size_mb"]
     },
-    "icosele_vault_network_policy": {
+    "icosele_vm_network_policy": {
       "description": "Manages per-VM firewall rules",
       "attributes": {
         "vm_id": {"type": "string", "required": true},
         "rules": {"type": "list", "required": true}
       }
     },
-    "icosele_vault_usb_device": {
+    "icosele_vm_usb_device": {
       "description": "Manages USB device passthrough",
       "attributes": {
         "vm_id": {"type": "string", "required": true},
@@ -48,11 +48,11 @@
     }
   },
   "data_sources": {
-    "icosele_vault_vms": {
+    "icosele_vm_vms": {
       "description": "List all VMs",
       "computed": ["vms"]
     },
-    "icosele_vault_snapshots": {
+    "icosele_vm_snapshots": {
       "description": "List snapshots for a VM",
       "attributes": {"vm_id": {"type": "string", "required": true}},
       "computed": ["snapshots"]

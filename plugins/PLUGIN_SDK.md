@@ -1,4 +1,4 @@
-# Icosele Vault Plugin SDK
+# Icosele VM Plugin SDK
 
 ## Plugin Structure
 
@@ -45,5 +45,5 @@ See `plugins/example_plugin/` for a complete working example that logs VM events
 
 1. Create your plugin directory under `plugins/`
 2. Add `plugin.json` and `main.py`
-3. Restart Icosele Vault — plugins are loaded on startup
+3. Restart Icosele VM — plugins are loaded on startup
 4. Or use the Install Plugin button in Settings > Plugins to install from a zip file

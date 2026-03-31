@@ -26,10 +26,10 @@ def _apparmor_available() -> bool:
 def generate_profile(vm_id: str, qemu_binary: str, disk_path: str,
                      iso_path: str = "") -> str:
     lines = [
-        f"# AppArmor profile for Icosele Vault VM: {vm_id}",
+        f"# AppArmor profile for Icosele VM VM: {vm_id}",
         f"# Auto-generated — do not edit manually",
         f"",
-        f"profile icosele_vault_{vm_id} {qemu_binary} flags=(enforce) {{",
+        f"profile icosele_vm_{vm_id} {qemu_binary} flags=(enforce) {{",
         f"  #include <abstractions/base>",
         f"  #include <abstractions/nameservice>",
         f"",
@@ -44,8 +44,8 @@ def generate_profile(vm_id: str, qemu_binary: str, disk_path: str,
         f"  /dev/vhost-net rw,",
         f"",
         f"  # Per-VM runtime directory",
-        f"  owner /tmp/icosele-vault/{vm_id}/ rw,",
-        f"  owner /tmp/icosele-vault/{vm_id}/** rw,",
+        f"  owner /tmp/icosele-vm/{vm_id}/ rw,",
+        f"  owner /tmp/icosele-vm/{vm_id}/** rw,",
     ]
     if disk_path:
         lines.append(f"")
@@ -69,7 +69,7 @@ def profile_loaded(vm_id: str) -> bool:
         out = subprocess.check_output(
             ["aa-status", "--json"], timeout=5,
             stderr=subprocess.DEVNULL).decode(errors="replace")
-        return f"icosele_vault_{vm_id}" in out
+        return f"icosele_vm_{vm_id}" in out
     except (FileNotFoundError, subprocess.SubprocessError):
         return False
 
@@ -211,7 +211,7 @@ class AppArmorPanel(QFrame):
             QMessageBox.warning(self, "Not Found",
                                 "Generate the profile first.")
             return
-        dest = f"/etc/apparmor.d/icosele_vault_{self._vm_id}"
+        dest = f"/etc/apparmor.d/icosele_vm_{self._vm_id}"
         try:
             subprocess.run(
                 ["pkexec", "cp", str(src), dest],

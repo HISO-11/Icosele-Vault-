@@ -88,7 +88,7 @@ class WelcomeDialog(QDialog):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("Welcome to Icosele Vault")
+        self.setWindowTitle("Welcome to Icosele VM")
         self.setFixedSize(640, 420)
         self.setStyleSheet(f"background-color: {BG_PANEL}; color: {TEXT_PRIMARY};")
 
@@ -96,7 +96,7 @@ class WelcomeDialog(QDialog):
         layout.setContentsMargins(48, 40, 48, 32)
         layout.setSpacing(8)
 
-        title = QLabel("Welcome to Icosele Vault")
+        title = QLabel("Welcome to Icosele VM")
         title.setStyleSheet(
             f"color: {TEXT_PRIMARY}; font-size: 36px; font-weight: 900;"
             f" background: transparent; font-family: {FONT_FAMILY};")
@@ -126,7 +126,7 @@ class WelcomeDialog(QDialog):
         import_card = _WelcomeCard(
             "Import existing QEMU config",
             "Already have a QEMU VM? Import an existing "
-            "JSON config file to add it to Icosele Vault.",
+            "JSON config file to add it to Icosele VM.",
             "Import Config", primary=False)
         import_card.btn.clicked.connect(self._on_import)
 

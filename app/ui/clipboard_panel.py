@@ -155,7 +155,7 @@ class ClipboardPanel(QFrame):
 
     def _update_ui(self) -> None:
         enabled = self._enable_check.isChecked()
-        sock = f"/tmp/icosele-vault/{self._vm_id}/qga.sock" if self._vm_id else "/tmp/icosele-vault/<vm>/qga.sock"
+        sock = f"/tmp/icosele-vm/{self._vm_id}/qga.sock" if self._vm_id else "/tmp/icosele-vm/<vm>/qga.sock"
         if enabled:
             self._status_label.setText("Clipboard sync: enabled")
             self._status_label.setStyleSheet(

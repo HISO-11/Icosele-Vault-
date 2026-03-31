@@ -960,7 +960,7 @@ class SnapshotDAGPanel(QFrame):
     def _sync_worker(self, cfg, snaps, disk_path, vm_name):
         from datetime import datetime as dt
         mode = cfg.get("mode", "local")
-        dest_base = cfg.get("local_path", "") if mode == "local" else "/tmp/icosele-vault-sync"
+        dest_base = cfg.get("local_path", "") if mode == "local" else "/tmp/icosele-vm-sync"
         if not dest_base:
             self._sigs.error.emit("No destination path configured")
             return

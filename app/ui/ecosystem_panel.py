@@ -89,12 +89,12 @@ class GitHubActionsPanel(QFrame):
         lay.addWidget(guide)
         lay.addWidget(_TemplateViewer(
             "CI TEST WORKFLOW",
-            _read_file(_GH_DIR / "icosele-vault-test.yml"),
-            "icosele-vault-test.yml"))
+            _read_file(_GH_DIR / "icosele-vm-test.yml"),
+            "icosele-vm-test.yml"))
         lay.addWidget(_TemplateViewer(
             "RELEASE SNAPSHOT WORKFLOW",
-            _read_file(_GH_DIR / "icosele-vault-snapshot.yml"),
-            "icosele-vault-snapshot.yml"))
+            _read_file(_GH_DIR / "icosele-vm-snapshot.yml"),
+            "icosele-vm-snapshot.yml"))
         lay.addStretch()
 
 
@@ -108,7 +108,7 @@ class TerraformPanel(QFrame):
         lay.addWidget(QLabel("TERRAFORM PROVIDER", styleSheet=SECTION_LABEL_STYLE))
         note = QLabel(
             "Full Terraform provider coming post-launch.\n"
-            "Contribute at github.com/HISO-11/icosele-vault")
+            "Contribute at github.com/HISO-11/icosele-vm")
         note.setWordWrap(True)
         note.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px; background: transparent;")
         lay.addWidget(note)

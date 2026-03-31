@@ -62,10 +62,67 @@ def _check_platform() -> list[dict]:
                       else "Install QEMU and enable Hyper-V for acceleration",
         })
 
+    # QEMU with version detection
+    qemu_path = shutil.which("qemu-system-x86_64")
+    qemu_ver = ""
+    if qemu_path:
+        import subprocess, re
+        try:
+            out = subprocess.check_output([qemu_path, "--version"], text=True, timeout=3,
+                                          stderr=subprocess.DEVNULL)
+            m = re.search(r"version\s+([\d.]+)", out)
+            if m:
+                qemu_ver = f" (v{m.group(1)})"
+        except Exception:
+            pass
     checks.append({
         "name": "QEMU",
-        "ok": shutil.which("qemu-system-x86_64") is not None,
-        "detail": shutil.which("qemu-system-x86_64") or "Not found",
+        "ok": qemu_path is not None,
+        "detail": f"Installed{qemu_ver}" if qemu_path else "Not found",
+    })
+
+    # swtpm
+    checks.append({
+        "name": "swtpm",
+        "ok": shutil.which("swtpm") is not None,
+        "detail": "Installed" if shutil.which("swtpm") else "Not found — TPM 2.0 unavailable",
+    })
+
+    # OVMF
+    from pathlib import Path
+    ovmf_paths = [
+        "/usr/share/OVMF/x64/OVMF_CODE.4m.fd",
+        "/usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd",
+        "/usr/share/OVMF/OVMF_CODE.fd",
+        "/usr/share/ovmf/OVMF.fd",
+    ]
+    ovmf_ok = any(Path(p).exists() for p in ovmf_paths)
+    checks.append({
+        "name": "OVMF",
+        "ok": ovmf_ok,
+        "detail": "Found — UEFI boot available" if ovmf_ok else "Not found",
+    })
+
+    # VirtIO drivers
+    virtio_ok = (Path.home() / "Downloads" / "virtio-win.iso").exists()
+    checks.append({
+        "name": "VirtIO drivers",
+        "ok": virtio_ok,
+        "detail": "Found" if virtio_ok else "Not found — auto-downloaded for Windows VMs",
+    })
+
+    # Ollama
+    ollama_ok = False
+    try:
+        import requests
+        resp = requests.get("http://localhost:11434", timeout=1)
+        ollama_ok = resp.ok
+    except Exception:
+        pass
+    checks.append({
+        "name": "Ollama (AI)",
+        "ok": ollama_ok,
+        "detail": "Running" if ollama_ok else "Not running — install from ollama.com",
     })
 
     return checks
@@ -112,7 +169,7 @@ class SystemStatusPanel(QFrame):
         layout.addWidget(self._update_banner)
 
         # Version
-        ver_label = QLabel(f"Icosele Vault v{_VERSION}  ({platform.system()} {platform.machine()})")
+        ver_label = QLabel(f"Icosele VM v{_VERSION}  ({platform.system()} {platform.machine()})")
         ver_label.setStyleSheet(
             f"color: {TEXT_MUTED}; font-size: 10px; background: transparent;")
         layout.addWidget(ver_label)
@@ -171,6 +228,6 @@ class SystemStatusPanel(QFrame):
 
     def _on_update_result(self, version: str, url: str) -> None:
         self._update_banner.setText(
-            f"Icosele Vault {version} is available — "
+            f"Icosele VM {version} is available — "
             f'<a href="{url}" style="color: {ACCENT};">Download update</a>')
         self._update_banner.show()

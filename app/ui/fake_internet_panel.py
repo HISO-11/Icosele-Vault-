@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 _FAKE_HTML = """<!DOCTYPE html><html><head><title>Simulated Internet</title></head>
 <body style="font-family:sans-serif;background:#1e1e2e;color:#cdd6f4;text-align:center;padding:60px">
 <h1>Simulated Internet</h1>
-<p>This is a fake response served by Icosele Vault sandbox mode.</p>
+<p>This is a fake response served by Icosele VM sandbox mode.</p>
 <p>The VM has no real internet access.</p>
 </body></html>"""
 

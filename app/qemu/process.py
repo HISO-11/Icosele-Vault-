@@ -30,7 +30,7 @@ class ProcessState(Enum):
     RUNNING = "running"
 
 
-VM_RUN_BASE = Path("/tmp/icosele-vault")
+VM_RUN_BASE = Path("/tmp/icosele-vm")
 
 def kvm_available() -> bool:
     """Check if /dev/kvm exists and is accessible by the current user."""
@@ -116,7 +116,7 @@ def _swtpm_available() -> bool:
 
 
 # Persistent base for TPM state and OVMF vars (survives reboots)
-_PERSISTENT_BASE = Path.home() / ".icosele-vault"
+_PERSISTENT_BASE = Path.home() / ".icosele-vm"
 
 # OVMF firmware paths — secboot variants preferred for Secure Boot.
 _OVMF_CODE_PATHS = [
@@ -216,7 +216,7 @@ class QemuProcess:
 
     @property
     def _tpm_state_dir(self) -> Path:
-        """Persistent per-VM TPM state directory at ~/.icosele-vault/tpm/{vm_id}/."""
+        """Persistent per-VM TPM state directory at ~/.icosele-vm/tpm/{vm_id}/."""
         return _PERSISTENT_BASE / "tpm" / self.config.vm_id
 
     @property
@@ -225,7 +225,7 @@ class QemuProcess:
 
     @property
     def _ovmf_vars_vm_path(self) -> Path:
-        """Per-VM copy of OVMF_VARS at ~/.icosele-vault/ovmf/{vm_id}/."""
+        """Per-VM copy of OVMF_VARS at ~/.icosele-vm/ovmf/{vm_id}/."""
         return _PERSISTENT_BASE / "ovmf" / self.config.vm_id / "OVMF_VARS.fd"
 
     def _prepare_ovmf_vars(self) -> Path | None:
@@ -343,7 +343,7 @@ class QemuProcess:
     def _ensure_disk_image(self) -> str:
         """Create a fresh qcow2 disk image if disk_path is empty or missing.
 
-        Stores it at ~/.icosele-vault/vms/{vm_id}/{vm_id}.qcow2 and updates
+        Stores it at ~/.icosele-vm/vms/{vm_id}/{vm_id}.qcow2 and updates
         the config's disk_path.  Returns the path to the disk image.
         """
         disk = self.config.disk_path

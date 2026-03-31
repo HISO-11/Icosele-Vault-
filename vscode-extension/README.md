@@ -1,10 +1,10 @@
-# Icosele Vault VSCode Extension
+# Icosele VM VSCode Extension
 
-Control your Icosele Vault virtual machines directly from VSCode.
+Control your Icosele VM virtual machines directly from VSCode.
 
 ## Prerequisites
 
-- Icosele Vault running with the REST API enabled on port 47820
+- Icosele VM running with the REST API enabled on port 47820
 - VSCode 1.80+
 
 ## Installation
@@ -16,12 +16,12 @@ Control your Icosele Vault virtual machines directly from VSCode.
 
 | Command | Description |
 |---------|-------------|
-| `Icosele Vault: List VMs` | Show all VMs in a quick pick |
-| `Icosele Vault: Start VM` | Pick and start a VM |
-| `Icosele Vault: Stop VM` | Pick and stop a VM |
-| `Icosele Vault: Take Snapshot` | Create a named snapshot |
-| `Icosele Vault: Open Dashboard` | Open the web dashboard |
-| `Icosele Vault: Show Status` | Update status bar item |
+| `Icosele VM: List VMs` | Show all VMs in a quick pick |
+| `Icosele VM: Start VM` | Pick and start a VM |
+| `Icosele VM: Stop VM` | Pick and stop a VM |
+| `Icosele VM: Take Snapshot` | Create a named snapshot |
+| `Icosele VM: Open Dashboard` | Open the web dashboard |
+| `Icosele VM: Show Status` | Update status bar item |
 
 ## Status Bar
 

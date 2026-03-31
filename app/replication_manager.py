@@ -79,8 +79,8 @@ class ReplicationJob:
                     check=True, capture_output=True, timeout=1200)
             else:
                 # rsync
-                tmp = f"/tmp/icosele-vault-repl/{fname}"
-                Path("/tmp/icosele-vault-repl").mkdir(parents=True, exist_ok=True)
+                tmp = f"/tmp/icosele-vm-repl/{fname}"
+                Path("/tmp/icosele-vm-repl").mkdir(parents=True, exist_ok=True)
                 self.progress = "Compressing..."
                 subprocess.run(
                     ["qemu-img", "convert", "-c", "-O", "qcow2",
@@ -111,7 +111,7 @@ def _send_failure_email(vm_name: str, error: str) -> None:
         import smtplib
         from email.message import EmailMessage
         msg = EmailMessage()
-        msg["Subject"] = f"Icosele Vault: Replication failed for {vm_name}"
+        msg["Subject"] = f"Icosele VM: Replication failed for {vm_name}"
         msg["From"] = cfg["from_addr"]
         msg["To"] = cfg["to_addr"]
         msg.set_content(f"Replication failed for VM '{vm_name}'.\nError: {error}")

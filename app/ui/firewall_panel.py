@@ -265,7 +265,7 @@ class FirewallPanel(QFrame):
         if not self._vm_id:
             return
         script = generate_nft_script(self._vm_id, self._rules)
-        run_dir = Path(f"/tmp/icosele-vault/{self._vm_id}")
+        run_dir = Path(f"/tmp/icosele-vm/{self._vm_id}")
         run_dir.mkdir(parents=True, exist_ok=True)
         script_path = run_dir / "firewall.nft"
         script_path.write_text(script)

@@ -36,7 +36,7 @@ def import_vm(archive_path: str) -> VMConfig:
         cfg = VMConfig(**{k: v for k, v in data.items()
                          if k in {f.name for f in __import__('dataclasses').fields(VMConfig)}})
         if 'disk.qcow2' in zf.namelist():
-            vm_dir = Path.home() / ".icosele-vault" / "vms" / cfg.vm_id
+            vm_dir = Path.home() / ".icosele-vm" / "vms" / cfg.vm_id
             vm_dir.mkdir(parents=True, exist_ok=True)
             disk_dest = vm_dir / f"{cfg.vm_id}.qcow2"
             with zf.open('disk.qcow2') as src, open(disk_dest, 'wb') as dst:
@@ -186,7 +186,7 @@ class VMListPanel(QFrame):
             f"font-size: 22px; font-weight: 900;"
             f" color: {ACCENT}; letter-spacing: 3px;"
             f" background: transparent;")
-        machine_label = QLabel("VAULT")
+        machine_label = QLabel("VM")
         machine_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         machine_label.setStyleSheet(
             f"font-size: 8px; font-weight: 500;"
@@ -565,7 +565,7 @@ class VMListPanel(QFrame):
         default_name = f"{cfg.vm_id}.ivault"
         path, _ = QFileDialog.getSaveFileName(
             self, "Export VM", str(Path.home() / default_name),
-            "Icosele Vault Archive (*.ivault);;All Files (*)")
+            "Icosele VM Archive (*.ivault);;All Files (*)")
         if not path:
             return
         try:
@@ -578,7 +578,7 @@ class VMListPanel(QFrame):
     def _on_import(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
             self, "Import VM", str(Path.home()),
-            "Icosele Vault Archive (*.ivault);;Zip Files (*.zip);;All Files (*)")
+            "Icosele VM Archive (*.ivault);;Zip Files (*.zip);;All Files (*)")
         if not path:
             return
         try:

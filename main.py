@@ -65,9 +65,9 @@ def _check_qemu_version() -> None:
 
 def _install_desktop_file() -> None:
     """Copy .desktop file to ~/.local/share/applications/ for Wayland taskbar integration."""
-    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icosele-vault.desktop")
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icosele-vm.desktop")
     dest_dir = os.path.expanduser("~/.local/share/applications")
-    dest = os.path.join(dest_dir, "icosele-vault.desktop")
+    dest = os.path.join(dest_dir, "icosele-vm.desktop")
     try:
         if not os.path.exists(src):
             return
@@ -96,8 +96,11 @@ def main() -> None:
     _install_desktop_file()
 
     app = QApplication(sys.argv)
-    app.setApplicationName("")
-    app.setDesktopFileName("icosele-vault")
+    app.setApplicationName("Icosele VM")
+    app.setApplicationDisplayName("Icosele VM")
+    app.setOrganizationName("Icosele")
+    app.setOrganizationDomain("icosele.com")
+    app.setDesktopFileName("icosele-vm")
 
     app_dir = os.path.dirname(os.path.abspath(__file__))
     icon_path = os.path.join(app_dir, "assets", "icon.png")

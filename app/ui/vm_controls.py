@@ -861,7 +861,7 @@ class VMControlPanel(QFrame):
         # Keep window title static
         w = self.window()
         if w:
-            w.setWindowTitle("Icosele Vault")
+            w.setWindowTitle("Icosele VM")
         self.overview_tab.card_cpu.set_value(
             str(cpus), "vCPU" + ("s" if cpus != 1 else ""), "KVM accelerated",
             secondary="x86_64 architecture")

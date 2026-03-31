@@ -50,7 +50,7 @@ class HandoffPanel(QFrame):
         lay.setSpacing(12)
         lay.addWidget(QLabel("VM HANDOFF", styleSheet=SECTION_LABEL_STYLE))
         desc = QLabel(
-            "Transfer this VM to another Icosele Vault instance on the local network. "
+            "Transfer this VM to another Icosele VM instance on the local network. "
             "The VM will be paused, compressed, and sent over a direct socket connection.")
         desc.setWordWrap(True)
         desc.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px; background: transparent;")

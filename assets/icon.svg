@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="80" fill="#1e1e1e"/>
+  <!-- Three stacked parallelogram layers suggesting virtualisation -->
+  <g transform="translate(256,256)">
+    <!-- Bottom layer -->
+    <path d="M-120,60 L120,60 L150,20 L-90,20 Z" fill="#F47B1F" opacity="0.4"/>
+    <!-- Middle layer -->
+    <path d="M-120,20 L120,20 L150,-20 L-90,-20 Z" fill="#F47B1F" opacity="0.7"/>
+    <!-- Top layer -->
+    <path d="M-120,-20 L120,-20 L150,-60 L-90,-60 Z" fill="#F47B1F"/>
+    <!-- Small VM window icon on top layer -->
+    <rect x="-20" y="-55" width="50" height="30" rx="3" fill="#1e1e1e" opacity="0.5"/>
+    <rect x="-16" y="-51" width="42" height="18" rx="2" fill="#F47B1F" opacity="0.3"/>
+  </g>
+</svg>

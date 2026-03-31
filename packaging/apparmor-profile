@@ -1,21 +1,21 @@
-# AppArmor profile for Icosele Vault (QEMU GUI manager)
+# AppArmor profile for Icosele VM (QEMU GUI manager)
 #
 # Installation:
-#   1. Copy this file to /etc/apparmor.d/icosele-vault
-#      sudo cp packaging/apparmor-profile /etc/apparmor.d/icosele-vault
+#   1. Copy this file to /etc/apparmor.d/icosele-vm
+#      sudo cp packaging/apparmor-profile /etc/apparmor.d/icosele-vm
 #
 #   2. Reload AppArmor:
-#      sudo apparmor_parser -r /etc/apparmor.d/icosele-vault
+#      sudo apparmor_parser -r /etc/apparmor.d/icosele-vm
 #
 #   3. To enforce:
-#      sudo aa-enforce /etc/apparmor.d/icosele-vault
+#      sudo aa-enforce /etc/apparmor.d/icosele-vm
 #
 #   4. To test in complain mode first (logs violations without blocking):
-#      sudo aa-complain /etc/apparmor.d/icosele-vault
+#      sudo aa-complain /etc/apparmor.d/icosele-vm
 
 #include <tunables/global>
 
-profile icosele-vault /usr/bin/icosele-vault flags=(complain) {
+profile icosele-vm /usr/bin/icosele-vm flags=(complain) {
   #include <abstractions/base>
   #include <abstractions/python>
   #include <abstractions/nameservice>
@@ -24,7 +24,7 @@ profile icosele-vault /usr/bin/icosele-vault flags=(complain) {
   #include <abstractions/fonts>
   #include <abstractions/qt5>
 
-  # Icosele Vault data directory — read/write VM configs
+  # Icosele VM data directory — read/write VM configs
   owner @{HOME}/qemu-gui/data/vms/ r,
   owner @{HOME}/qemu-gui/data/vms/** rw,
 
@@ -46,8 +46,8 @@ profile icosele-vault /usr/bin/icosele-vault flags=(complain) {
   owner @{HOME}/**.raw rw,
 
   # Per-VM runtime directory for QMP sockets and PID files
-  owner /tmp/icosele-vault/ rw,
-  owner /tmp/icosele-vault/** rw,
+  owner /tmp/icosele-vm/ rw,
+  owner /tmp/icosele-vm/** rw,
 
   # XDG runtime dir (fallback socket location)
   owner /run/user/*/qemu-*.sock rw,

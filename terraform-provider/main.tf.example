@@ -1,7 +1,7 @@
 terraform {
   required_providers {
-    icosele_vault = {
-      source  = "icosele/icosele-vault"
+    icosele_vm = {
+      source  = "icosele/icosele-vm"
       version = "~> 0.1"
     }
   }
@@ -12,13 +12,13 @@ variable "icosele_api_key" {
   sensitive = true
 }
 
-provider "icosele_vault" {
+provider "icosele_vm" {
   api_key = var.icosele_api_key
   host    = "localhost"
   port    = 47820
 }
 
-resource "icosele_vault_vm" "dev_machine" {
+resource "icosele_vm_vm" "dev_machine" {
   name      = "development"
   ram_mb    = 8192
   cpu_cores = 4
@@ -26,14 +26,14 @@ resource "icosele_vault_vm" "dev_machine" {
   os_type   = "linux"
 }
 
-resource "icosele_vault_snapshot" "pre_deploy" {
-  vm_id = icosele_vault_vm.dev_machine.id
+resource "icosele_vm_snapshot" "pre_deploy" {
+  vm_id = icosele_vm_vm.dev_machine.id
   name  = "pre-deployment"
   tag   = "terraform-managed"
 }
 
-resource "icosele_vault_network_policy" "dev_firewall" {
-  vm_id = icosele_vault_vm.dev_machine.id
+resource "icosele_vm_network_policy" "dev_firewall" {
+  vm_id = icosele_vm_vm.dev_machine.id
   rules = [
     {
       direction = "in"

@@ -379,7 +379,7 @@ class VMCreateDialog(QDialog):
         self._build_ui()
 
     def _build_ui(self) -> None:
-        self.setWindowTitle("Icosele Vault - New Machine")
+        self.setWindowTitle("Icosele VM New Machine")
         self.setFixedSize(580, 720)
         self.setStyleSheet(f"background-color: {BG_PANEL}; color: {TEXT_PRIMARY};")
 
