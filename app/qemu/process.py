@@ -344,6 +344,7 @@ class QemuProcess:
         iso = self.config.iso_path
         disk = self._ensure_disk_image()
         virtio_iso = self._extract_virtio_iso()
+        extra = list(self.config.extra_args)
 
         # Validate paths
         for label, path in [("QEMU binary", self.config.qemu_binary),
@@ -351,18 +352,65 @@ class QemuProcess:
             if path and not Path(path).exists():
                 log.error("%s not found: %s", label, path)
 
+        # Determine machine type and CPU from extra_args or defaults
+        has_machine = any(a == "-machine" for a in extra)
+        has_cpu = any(a == "-cpu" for a in extra)
+
         args = [
             self.config.qemu_binary,
             "-enable-kvm",
-            "-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time",
             "-m", str(self.config.ram_mb),
             "-smp", str(self.config.cpu_cores),
-            "-machine", "pc",
             "-rtc", "base=localtime,clock=host",
             "-global", "kvm-pit.lost_tick_policy=discard",
             "-qmp", f"unix:{self.socket_path},server,nowait",
             "-pidfile", self.pid_path,
         ]
+
+        if not has_cpu:
+            args += ["-cpu", "host,hv_relaxed,hv_spinlocks=0x1fff,hv_vapic,hv_time"]
+        if not has_machine:
+            args += ["-machine", "pc"]
+
+        # OVMF/UEFI firmware (needed for TPM / Secure Boot)
+        needs_tpm = _needs_swtpm(extra)
+        if needs_tpm:
+            ovmf_code = _find_ovmf_code()
+            ovmf_vars = self._prepare_ovmf_vars()
+            if ovmf_code and ovmf_vars:
+                args += [
+                    "-drive", f"if=pflash,format=raw,readonly=on,file={ovmf_code}",
+                    "-drive", f"if=pflash,format=raw,file={ovmf_vars}",
+                ]
+                log.info("UEFI firmware: %s", ovmf_code)
+            else:
+                log.warning("OVMF not found — Secure Boot unavailable")
+
+            # Rewrite TPM chardev path to use per-VM persistent socket
+            if _swtpm_available():
+                extra = [
+                    self._swtpm_sock_path if a == "swtpm-sock" else
+                    a.replace("path=swtpm-sock", f"path={self._swtpm_sock_path}")
+                    for a in extra
+                ]
+            else:
+                # Strip TPM args if swtpm not installed
+                skip = False
+                filtered: list[str] = []
+                for a in extra:
+                    if skip:
+                        skip = False
+                        continue
+                    if a in ("-chardev", "-tpmdev") and any(
+                            "chrtpm" in x or "tpm0" in x for x in extra[extra.index(a)+1:extra.index(a)+2]):
+                        skip = True
+                        continue
+                    if a == "-device" and any("tpm" in x for x in extra[extra.index(a)+1:extra.index(a)+2]):
+                        skip = True
+                        continue
+                    filtered.append(a)
+                extra = filtered
+                log.warning("swtpm not installed — TPM args stripped")
 
         # Drives on IDE: index 0=ISO, 1=disk, 2=virtio
         if iso:
@@ -376,6 +424,9 @@ class QemuProcess:
         args += ["-netdev", "user,id=net0", "-device", "e1000,netdev=net0"]
         args += ["-vga", "std", "-display", "gtk"]
         args += ["-device", "usb-ehci", "-device", "usb-tablet"]
+
+        # Append template/user extra_args
+        args += extra
 
         return args
 
@@ -396,6 +447,14 @@ class QemuProcess:
             sock.unlink()
 
         self.state = ProcessState.STARTING
+
+        # Start swtpm daemon if TPM is configured
+        if not self._start_swtpm():
+            log.error("Failed to start swtpm — aborting VM launch")
+            self.state = ProcessState.STOPPED
+            self._cleanup_run_dir()
+            return
+
         args = self.build_args()
 
         # Print full command to console for debugging
