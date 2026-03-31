@@ -60,6 +60,7 @@ THUMB_ROLE = Qt.ItemDataRole.UserRole + 4
 CPU_BAR_ROLE = Qt.ItemDataRole.UserRole + 5
 RAM_BAR_ROLE = Qt.ItemDataRole.UserRole + 6
 NET_BAR_ROLE = Qt.ItemDataRole.UserRole + 7
+ENCRYPTED_ROLE = Qt.ItemDataRole.UserRole + 8
 
 
 def _arch_from_binary(qemu_binary: str) -> str:
@@ -112,9 +113,19 @@ class VMItemDelegate(QStyledItemDelegate):
             painter.setBrush(QColor(255, 255, 255, 8))
             painter.drawRoundedRect(card, 6, 6)
 
-        # VM name — 12px, weight 400, left aligned, vertically centred
+        # Lock icon for encrypted VMs
+        is_encrypted = bool(index.data(ENCRYPTED_ROLE))
         lx = card.x() + 12
-        name_w = card.width() - 36
+        if is_encrypted:
+            painter.setPen(QColor(ACCENT))
+            painter.setFont(QFont("Inter", 9))
+            painter.drawText(QRectF(lx, card.y(), 14, card.height()),
+                             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                             "\U0001f512")
+            lx += 16
+
+        # VM name — 12px, weight 400, left aligned, vertically centred
+        name_w = card.right() - lx - 24
         painter.setPen(QColor(TEXT_PRIMARY))
         painter.setFont(QFont("Inter", 12))
         fm = painter.fontMetrics()
@@ -258,7 +269,9 @@ class VMListPanel(QFrame):
         self.list_widget.viewport().installEventFilter(self)
 
         for cfg in self.configs:
-            self._add_item(cfg.name, running=False, os_label=_arch_from_binary(cfg.qemu_binary))
+            self._add_item(cfg.name, running=False,
+                           os_label=_arch_from_binary(cfg.qemu_binary),
+                           encrypted=getattr(cfg, 'encrypted', False))
         if self.configs:
             self.list_widget.setCurrentRow(0)
 
@@ -287,8 +300,18 @@ class VMListPanel(QFrame):
             f" font-size: 11px; padding: 4px 10px; }}"
             f"QPushButton:hover {{ color: {TEXT_PRIMARY}; border-color: {TEXT_SECONDARY}; }}")
         self._btn_export.clicked.connect(self._on_export)
+        self._btn_remote = QPushButton("Remote")
+        self._btn_remote.setFixedHeight(28)
+        self._btn_remote.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_remote.setStyleSheet(
+            f"QPushButton {{ background: transparent; color: {TEXT_SECONDARY};"
+            f" border: 1px solid {BORDER}; border-radius: 4px;"
+            f" font-size: 11px; padding: 4px 10px; }}"
+            f"QPushButton:hover {{ color: {TEXT_PRIMARY}; border-color: {TEXT_SECONDARY}; }}")
+        self._btn_remote.clicked.connect(self._on_remote)
         ie_row.addWidget(self._btn_import)
         ie_row.addWidget(self._btn_export)
+        ie_row.addWidget(self._btn_remote)
         ie_row.addStretch()
         layout.addLayout(ie_row)
 
@@ -324,10 +347,12 @@ class VMListPanel(QFrame):
                             return True
         return super().eventFilter(obj, event)
 
-    def _add_item(self, name: str, running: bool = False, os_label: str = "x86_64") -> None:
+    def _add_item(self, name: str, running: bool = False, os_label: str = "x86_64",
+                  encrypted: bool = False) -> None:
         item = QListWidgetItem(name)
         item.setData(STATUS_DOT_ROLE, running)
         item.setData(OS_LABEL_ROLE, os_label)
+        item.setData(ENCRYPTED_ROLE, encrypted)
         self.list_widget.addItem(item)
 
     def _update_count_label(self) -> None:
@@ -447,7 +472,8 @@ class VMListPanel(QFrame):
             elif not group and last_group:
                 last_group = None
             self._add_item(cfg.name, running=cfg.vm_id in self._running_ids,
-                           os_label=_arch_from_binary(cfg.qemu_binary))
+                           os_label=_arch_from_binary(cfg.qemu_binary),
+                           encrypted=getattr(cfg, 'encrypted', False))
         if current_name:
             for i in range(self.list_widget.count()):
                 it = self.list_widget.item(i)
@@ -469,7 +495,9 @@ class VMListPanel(QFrame):
 
     def add_vm(self, config: VMConfig) -> None:
         self.configs.append(config)
-        self._add_item(config.name, running=False, os_label=_arch_from_binary(config.qemu_binary))
+        self._add_item(config.name, running=False,
+                       os_label=_arch_from_binary(config.qemu_binary),
+                       encrypted=getattr(config, 'encrypted', False))
         self._update_count_label()
         self.list_widget.setCurrentRow(self.list_widget.count() - 1)
 
@@ -503,6 +531,11 @@ class VMListPanel(QFrame):
                     item.setData(NET_BAR_ROLE, net)
                 break
         self.list_widget.viewport().update()
+
+    def _on_remote(self) -> None:
+        from app.ui.remote_host_dialog import RemoteHostDialog
+        dlg = RemoteHostDialog(self)
+        dlg.exec()
 
     def _on_export(self) -> None:
         row = self.list_widget.currentRow()

@@ -107,6 +107,12 @@ def main() -> None:
 
     _check_qemu_version()
 
+    # First-run wizard
+    from app.ui.first_run_wizard import needs_first_run, FirstRunWizard
+    if needs_first_run():
+        wizard = FirstRunWizard()
+        wizard.exec()
+
     window = MainWindow(configs)
     if os.path.exists(icon_path):
         window.setWindowIcon(QIcon(icon_path))

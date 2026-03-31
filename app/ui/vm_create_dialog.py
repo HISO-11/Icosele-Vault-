@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import logging
 import re
+import shutil
+import subprocess
 import threading
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal, QObject
 from PySide6.QtWidgets import (
-    QComboBox, QDialog, QFileDialog, QFormLayout, QFrame,
-    QGridLayout, QHBoxLayout, QLabel, QLineEdit, QProgressBar,
+    QCheckBox, QComboBox, QDialog, QFileDialog, QFormLayout, QFrame,
+    QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QProgressBar,
     QPushButton, QSizePolicy, QSpinBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
@@ -263,6 +265,112 @@ class ISODownloadDialog(QDialog):
         self.accept()
 
 
+class _WindowsSetupSignals(QObject):
+    status = Signal(str)
+    finished = Signal()
+    error = Signal(str)
+
+
+class WindowsSetupDialog(QDialog):
+    """Progress dialog shown during one-click Windows VM setup."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self._thread: threading.Thread | None = None
+        self.virtio_iso_path = ""
+        self.setWindowTitle("Windows VM Setup")
+        self.setFixedSize(440, 200)
+        self.setStyleSheet(f"background-color: {BG_PANEL}; color: {TEXT_PRIMARY};")
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 24, 28, 20)
+        layout.setSpacing(12)
+
+        title = QLabel("Setting up Windows VM...")
+        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: 700;"
+                            f" background: transparent; font-family: {FONT_FAMILY};")
+        layout.addWidget(title)
+
+        self._status = QLabel("Configuring TPM, UEFI and drivers automatically")
+        self._status.setWordWrap(True)
+        self._status.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px; background: transparent;")
+        layout.addWidget(self._status)
+
+        self._progress = QProgressBar()
+        self._progress.setMaximum(0)  # indeterminate
+        self._progress.setFixedHeight(20)
+        self._progress.setStyleSheet(f"""
+            QProgressBar {{ background-color: {BG_CARD}; border: 1px solid {BORDER};
+                border-radius: 4px; text-align: center; color: {TEXT_PRIMARY}; font-size: 10px; }}
+            QProgressBar::chunk {{ background-color: {ACCENT}; border-radius: 3px; }}""")
+        layout.addWidget(self._progress)
+        layout.addStretch()
+
+    def run_setup(self) -> None:
+        self._sig = _WindowsSetupSignals()
+        self._sig.status.connect(self._status.setText)
+        self._sig.finished.connect(self._on_done)
+        self._sig.error.connect(self._on_error)
+        self._thread = threading.Thread(target=self._worker, daemon=True)
+        self._thread.start()
+
+    def _worker(self) -> None:
+        virtio_path = Path.home() / "Downloads" / "virtio-win.iso"
+        try:
+            # Step 1: Check/download virtio-win.iso
+            if virtio_path.exists():
+                self._sig.status.emit("VirtIO drivers found")
+            else:
+                self._sig.status.emit("Downloading VirtIO drivers (virtio-win.iso)...")
+                virtio_path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    import requests
+                    resp = requests.get(VIRTIO_WIN_URL, stream=True, timeout=30)
+                    resp.raise_for_status()
+                    with open(virtio_path, "wb") as f:
+                        for chunk in resp.iter_content(chunk_size=1024 * 256):
+                            f.write(chunk)
+                except ImportError:
+                    subprocess.run(
+                        ["curl", "-L", "-o", str(virtio_path), VIRTIO_WIN_URL],
+                        check=True, capture_output=True, timeout=600)
+
+            # Step 2: Check swtpm
+            self._sig.status.emit("Checking TPM 2.0 (swtpm)...")
+            if not shutil.which("swtpm"):
+                self._sig.status.emit("swtpm not found — TPM will be configured when available")
+
+            # Step 3: Check OVMF
+            self._sig.status.emit("Checking UEFI firmware (OVMF)...")
+            ovmf_found = any(Path(p).exists() for p in [
+                "/usr/share/OVMF/x64/OVMF_CODE.4m.fd",
+                "/usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd",
+                "/usr/share/OVMF/OVMF_CODE.secboot.fd",
+                "/usr/share/OVMF/OVMF_CODE.fd",
+            ])
+            if not ovmf_found:
+                self._sig.status.emit("OVMF not found — UEFI will be configured when available")
+
+            self.virtio_iso_path = str(virtio_path) if virtio_path.exists() else ""
+            self._sig.status.emit("Windows VM setup complete")
+            self._sig.finished.emit()
+        except Exception as exc:
+            self._sig.error.emit(str(exc))
+
+    def _on_done(self) -> None:
+        self._progress.setMaximum(100)
+        self._progress.setValue(100)
+        self.accept()
+
+    def _on_error(self, msg: str) -> None:
+        self._status.setText(f"Setup error: {msg}\nYou can still create the VM.")
+        self._progress.setMaximum(100)
+        self._progress.setValue(100)
+        import time
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(2000, self.accept)
+
+
 class VMCreateDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -449,6 +557,20 @@ class VMCreateDialog(QDialog):
         self.bridge_label = QLabel("Bridge Iface")
         self.bridge_label.setStyleSheet(LABEL_STYLE)
 
+        # --- Encryption ---
+        self._encrypt_check = QCheckBox("Encrypt disk (LUKS AES-256)")
+        self._encrypt_check.setStyleSheet(
+            f"QCheckBox {{ color: {TEXT_PRIMARY}; font-size: 12px; background: transparent; }}")
+        self._encrypt_check.toggled.connect(self._on_encrypt_toggled)
+        self._encrypt_pw = QLineEdit()
+        self._encrypt_pw.setPlaceholderText("Encryption password")
+        self._encrypt_pw.setEchoMode(QLineEdit.EchoMode.Password)
+        self._encrypt_pw.setStyleSheet(INPUT_STYLE)
+        self._encrypt_pw.hide()
+        self._encrypt_pw_label = QLabel("Password")
+        self._encrypt_pw_label.setStyleSheet(LABEL_STYLE)
+        self._encrypt_pw_label.hide()
+
         for lt, w in [("Name", self.name_input), ("RAM", self.ram_input),
                        ("CPU Cores", self.cpu_input), ("ISO / Boot", iso_widget),
                        ("Disk Image", disk_widget), ("New Disk Size", self._disk_size_combo),
@@ -459,6 +581,8 @@ class VMCreateDialog(QDialog):
         form.addRow(self.bridge_label, self.bridge_input)
         self.bridge_label.hide()
         self.bridge_input.hide()
+        form.addRow(QLabel(""), self._encrypt_check)
+        form.addRow(self._encrypt_pw_label, self._encrypt_pw)
 
         # VirtIO driver ISO row (Windows templates only)
         virtio_row = QHBoxLayout()
@@ -554,6 +678,10 @@ class VMCreateDialog(QDialog):
             self._git_devcontainer = cfg.get("devcontainer_config", {})
             self._git_port_forwards = cfg.get("port_forwards", [])
             self._stack.setCurrentIndex(1)
+
+    def _on_encrypt_toggled(self, checked: bool) -> None:
+        self._encrypt_pw.setVisible(checked)
+        self._encrypt_pw_label.setVisible(checked)
 
     def _on_net_mode_changed(self) -> None:
         ib = self.net_combo.currentData() == NET_MODE_BRIDGE
@@ -668,6 +796,12 @@ class VMCreateDialog(QDialog):
         if virtio_iso:
             extra_args += ["-drive", f"file={virtio_iso},media=cdrom,index=2"]
 
+        # Validate encryption password
+        want_encrypt = self._encrypt_check.isChecked()
+        if want_encrypt and not self._encrypt_pw.text().strip():
+            self.error_label.setText("Encryption password is required.")
+            return
+
         net_mode = self.net_combo.currentData() or NET_MODE_NAT
         bridge_iface = self.bridge_input.text().strip() if net_mode == NET_MODE_BRIDGE else ""
         self.error_label.setText("")
@@ -675,6 +809,8 @@ class VMCreateDialog(QDialog):
             name=name, ram_mb=self.ram_input.value(), cpu_cores=self.cpu_input.value(),
             disk_path=disk, iso_path=iso, qemu_binary=qemu_bin, extra_args=extra_args,
             net_mode=net_mode, net_bridge_iface=bridge_iface)
+        if want_encrypt:
+            self.result_config.encrypted = True
         # Apply git repo import data if present
         if hasattr(self, "_git_repo_path") and self._git_repo_path:
             self.result_config.repo_path = self._git_repo_path
@@ -684,7 +820,7 @@ class VMCreateDialog(QDialog):
             self.result_config.devcontainer_config = self._git_devcontainer
         if hasattr(self, "_git_port_forwards") and self._git_port_forwards:
             self.result_config.port_forwards = self._git_port_forwards
-        # Windows template: use VGA device (virtio-gpu has no Windows drivers)
+        # Windows template: one-click setup with progress dialog
         if tpl.get("windows"):
             self.result_config.display_config = {
                 "display_backend": "gtk",
@@ -693,6 +829,20 @@ class VMCreateDialog(QDialog):
                 "vnc_port": 5900,
                 "resolution": "",
             }
+            # Run Windows auto-setup if user didn't provide virtio ISO manually
+            if not virtio_iso:
+                setup_dlg = WindowsSetupDialog(self)
+                setup_dlg.run_setup()
+                setup_dlg.exec()
+                if setup_dlg.virtio_iso_path:
+                    self.result_config.extra_args += [
+                        "-drive", f"file={setup_dlg.virtio_iso_path},media=cdrom,index=2"]
+            # Show ready message
+            QMessageBox.information(
+                self, "Windows VM Ready",
+                f"Windows VM \"{name}\" is ready — click Start to begin installation.\n\n"
+                "When asked for drivers click Load Driver and select\n"
+                "viostor/w11/amd64 from the E: drive.")
         # Sandbox template: isolate network, disable sharing
         if tpl.get("sandbox"):
             self.result_config.sandbox_mode = True

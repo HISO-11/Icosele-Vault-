@@ -75,10 +75,34 @@ def _resolve_pci_name(vendor_id: str, device_id: str) -> tuple[str, str]:
     return vn, dn
 
 
+def _scan_gpu_lspci() -> list[GPUDeviceInfo]:
+    """Fallback: scan GPUs using lspci -nn when sysfs is unavailable."""
+    import subprocess
+    try:
+        result = subprocess.run(['lspci', '-nn'], capture_output=True, text=True, timeout=5)
+        if result.returncode != 0:
+            return []
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return []
+    gpus: list[GPUDeviceInfo] = []
+    import re
+    for line in result.stdout.strip().splitlines():
+        if 'VGA' not in line and '3D controller' not in line and 'Display controller' not in line:
+            continue
+        # Format: XX:XX.X Type: Name [vvvv:dddd]
+        m = re.match(r'^(\S+)\s+.*:\s+(.*)\s+\[([0-9a-fA-F]{4}):([0-9a-fA-F]{4})\]', line)
+        if m:
+            pci_addr = "0000:" + m.group(1)
+            name = m.group(2).strip()
+            vid, did = m.group(3), m.group(4)
+            gpus.append(GPUDeviceInfo(pci_addr, vid, did, "", name, "", ""))
+    return gpus
+
+
 def scan_gpu_devices() -> list[GPUDeviceInfo]:
     base = Path("/sys/bus/pci/devices")
     if not base.exists():
-        return []
+        return _scan_gpu_lspci()
     gpus: list[GPUDeviceInfo] = []
     for entry in sorted(base.iterdir()):
         cv = _read_sysfs(entry / "class")
@@ -110,7 +134,7 @@ def scan_gpu_devices() -> list[GPUDeviceInfo]:
                 pass
         vn, dn = _resolve_pci_name(vid, did)
         gpus.append(GPUDeviceInfo(entry.name, vid, did, vn, dn, cd, ig))
-    return gpus
+    return gpus or _scan_gpu_lspci()
 
 
 def generate_vfio_commands(gpu: GPUDeviceInfo) -> str:

@@ -479,7 +479,13 @@ class QemuProcess:
             args += ["-drive", f"file={iso},media=cdrom,index={drive_idx},if=ide"]
             drive_idx += 1
         if disk:
-            args += ["-drive", f"file={disk},format=qcow2,index={drive_idx},if=ide"]
+            if self.config.encrypted and self.encryption_password:
+                args += [
+                    "-object", f"secret,id=sec0,data={self.encryption_password},format=raw",
+                    "-drive", f"file={disk},format=luks,key-secret=sec0,index={drive_idx},if=ide",
+                ]
+            else:
+                args += ["-drive", f"file={disk},format=qcow2,index={drive_idx},if=ide"]
             drive_idx += 1
 
         # VirtIO drivers ISO (auto-download for Windows, or from extra_args)
