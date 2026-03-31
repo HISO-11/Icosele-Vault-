@@ -194,6 +194,10 @@ class QemuProcess:
         return str(self._vm_run_dir / "qmp.sock")
 
     @property
+    def monitor_path(self) -> str:
+        return str(self._vm_run_dir / "monitor.sock")
+
+    @property
     def pid_path(self) -> str:
         return str(self._vm_run_dir / "qemu.pid")
 
@@ -401,10 +405,11 @@ class QemuProcess:
             self.config.qemu_binary,
             "-enable-kvm",
             "-m", str(self.config.ram_mb),
-            "-smp", str(self.config.cpu_cores),
+            "-smp", f"{self.config.cpu_cores},maxcpus={max(self.config.cpu_cores * 2, 8)}",
             "-rtc", "base=localtime,clock=host",
             "-global", "kvm-pit.lost_tick_policy=discard",
             "-qmp", f"unix:{self.socket_path},server,nowait",
+            "-monitor", f"unix:{self.monitor_path},server,nowait",
             "-pidfile", self.pid_path,
         ]
 

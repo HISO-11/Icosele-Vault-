@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 class SnapshotPanel(QFrame):
     snapshot_action = Signal(str, str)
+    boot_from_snapshot = Signal(str)  # snapshot name
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -38,10 +39,12 @@ class SnapshotPanel(QFrame):
         self.btn_create = QPushButton("Create")
         self.btn_restore = QPushButton("Restore")
         self.btn_delete = QPushButton("Delete")
+        self.btn_boot = QPushButton("Boot from Snapshot")
         self.btn_create.setStyleSheet(save_btn_style())
         self.btn_restore.setStyleSheet(subtle_btn_style())
         self.btn_delete.setStyleSheet(subtle_btn_style())
-        for btn in (self.btn_create, self.btn_restore, self.btn_delete):
+        self.btn_boot.setStyleSheet(subtle_btn_style())
+        for btn in (self.btn_create, self.btn_restore, self.btn_delete, self.btn_boot):
             btn.setFixedHeight(32)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             br.addWidget(btn)
@@ -51,6 +54,7 @@ class SnapshotPanel(QFrame):
         self.btn_create.clicked.connect(self._on_create)
         self.btn_restore.clicked.connect(self._on_restore)
         self.btn_delete.clicked.connect(self._on_delete)
+        self.btn_boot.clicked.connect(self._on_boot)
         layout.addStretch()
         self.set_enabled(False)
 
@@ -58,6 +62,7 @@ class SnapshotPanel(QFrame):
         self.btn_create.setEnabled(enabled)
         self.btn_restore.setEnabled(enabled)
         self.btn_delete.setEnabled(enabled)
+        self.btn_boot.setEnabled(not enabled)  # boot only when VM stopped
 
     def set_snapshots(self, names: list[str]) -> None:
         self.snap_list.clear()
@@ -92,6 +97,16 @@ class SnapshotPanel(QFrame):
                                  QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                                  ) == QMessageBox.StandardButton.Yes:
             self.snapshot_action.emit("delete", name)
+
+    def _on_boot(self) -> None:
+        name = self._selected_name()
+        if not name:
+            return
+        if QMessageBox.question(self, "Boot from Snapshot",
+                                 f"Start VM from snapshot '{name}'?",
+                                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                                 ) == QMessageBox.StandardButton.Yes:
+            self.boot_from_snapshot.emit(name)
 
     def apply_theme(self) -> None:
         from app.ui import theme

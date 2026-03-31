@@ -113,9 +113,11 @@ class PerformancePanel(QFrame):
         self.ram_graph.max_value = max_mb
 
     def add_cpu_point(self, percent: float) -> None:
+        self.last_cpu = percent
         self.cpu_graph.add_point(percent)
 
     def add_ram_point(self, used_mb: float) -> None:
+        self.last_ram = used_mb
         self.ram_graph.add_point(used_mb)
 
     def clear(self) -> None:

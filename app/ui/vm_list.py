@@ -353,7 +353,12 @@ class VMListPanel(QFrame):
             item = self.list_widget.item(i)
             if item is None:
                 continue
-            matches = not query or query in item.text().lower()
+            name_match = not query or query in item.text().lower()
+            tag_match = False
+            if query and i < len(self.configs):
+                tags = getattr(self.configs[i], 'tags', []) or []
+                tag_match = any(query in t.lower() for t in tags)
+            matches = name_match or tag_match
             item.setHidden(not matches)
             if matches:
                 visible += 1
@@ -382,6 +387,15 @@ class VMListPanel(QFrame):
         clone_action = menu.addAction("\u2398  Clone")
         delete_action = menu.addAction("\u2717  Delete")
 
+        # Group submenu
+        group_menu = menu.addMenu("\U0001f4c1  Group")
+        no_group_action = group_menu.addAction("(No group)")
+        group_actions = {}
+        existing_groups = sorted({c.group for c in self.configs if c.group})
+        for g in existing_groups:
+            group_actions[group_menu.addAction(g)] = g
+        new_group_action = group_menu.addAction("+ New Group...")
+
         action = menu.exec(self.list_widget.mapToGlobal(pos))
         if action == clone_action:
             self.clone_requested.emit(idx)
@@ -397,6 +411,49 @@ class VMListPanel(QFrame):
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
             if reply == QMessageBox.StandardButton.Yes:
                 self.vm_delete_requested.emit(idx)
+        elif action == no_group_action:
+            self.configs[idx].group = ""
+            self.configs[idx].save()
+            self._rebuild_list()
+        elif action == new_group_action:
+            gname, ok = QInputDialog.getText(self, "New Group", "Group name:")
+            if ok and gname.strip():
+                self.configs[idx].group = gname.strip()
+                self.configs[idx].save()
+                self._rebuild_list()
+        elif action in group_actions:
+            self.configs[idx].group = group_actions[action]
+            self.configs[idx].save()
+            self._rebuild_list()
+
+    def _rebuild_list(self) -> None:
+        """Rebuild list widget to reflect group changes."""
+        current_name = None
+        item = self.list_widget.currentItem()
+        if item:
+            current_name = item.text()
+        self.list_widget.clear()
+        # Sort by group then name
+        grouped = sorted(enumerate(self.configs), key=lambda x: (x[1].group or "zzz", x[1].name))
+        last_group = None
+        for _, cfg in grouped:
+            group = cfg.group or ""
+            if group and group != last_group:
+                header = QListWidgetItem(f"\U0001f4c1 {group}")
+                header.setFlags(Qt.ItemFlag.NoItemFlags)
+                header.setData(STATUS_DOT_ROLE, False)
+                self.list_widget.addItem(header)
+                last_group = group
+            elif not group and last_group:
+                last_group = None
+            self._add_item(cfg.name, running=cfg.vm_id in self._running_ids,
+                           os_label=_arch_from_binary(cfg.qemu_binary))
+        if current_name:
+            for i in range(self.list_widget.count()):
+                it = self.list_widget.item(i)
+                if it and it.text() == current_name:
+                    self.list_widget.setCurrentRow(i)
+                    break
 
     def _config_index_for_name(self, name: str) -> int:
         for i, cfg in enumerate(self.configs):

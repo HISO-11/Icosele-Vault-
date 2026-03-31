@@ -67,6 +67,7 @@ class MainWindow(QMainWindow):
         self._instant_boot_pending: dict[str, QTimer] = {}
         self._instant_boot_saved: set[str] = set()
         self._quarantined: dict[str, bool] = {}
+        self._auto_snapshot_timers: dict[str, QTimer] = {}
 
         self._vm_start_times: dict[str, float] = {}
         self._vm_start_disk_sizes: dict[str, int] = {}
@@ -261,6 +262,7 @@ class MainWindow(QMainWindow):
         self.vm_list.create_requested.connect(self._on_create_vm)
         self.vm_list.ai_create_requested.connect(self._on_ai_create_vm)
         self.vm_controls.overview_tab.create_requested.connect(self._on_create_vm)
+        self.vm_controls.overview_tab.clone_requested.connect(self._on_clone_vm)
         self.vm_controls.overview_tab.fullscreen_requested.connect(self._toggle_fullscreen)
         self.vm_list.clone_requested.connect(self._on_sidebar_clone)
         self.vm_list.vm_rename_requested.connect(self._on_sidebar_rename)
@@ -271,6 +273,7 @@ class MainWindow(QMainWindow):
         self.vm_controls.btn_stop.clicked.connect(self._on_stop)
         self.vm_controls.btn_pause.clicked.connect(self._on_pause)
         self.vm_controls.snapshot_panel.snapshot_action.connect(self._on_snapshot_action)
+        self.vm_controls.snapshot_panel.boot_from_snapshot.connect(self._on_boot_from_snapshot)
         self.vm_controls.snap_dag_panel.snapshot_action.connect(self._on_snapshot_action)
         self.vm_controls.snap_dag_panel.clone_requested.connect(self._on_clone_vm)
         self.vm_controls.snap_dag_panel.branch_changed.connect(
@@ -808,6 +811,37 @@ class MainWindow(QMainWindow):
         # Update network monitor VM names
         names = {c.vm_id: c.name for c in self.configs}
         self._net_monitor.set_vm_names(names)
+        # Auto-snapshot scheduling
+        if cfg.auto_snapshot:
+            self._start_auto_snapshot(cfg.vm_id)
+
+    def _start_auto_snapshot(self, vm_id: str) -> None:
+        if vm_id in self._auto_snapshot_timers:
+            return
+        timer = QTimer(self)
+        timer.setInterval(1800000)  # 30 minutes
+        timer.timeout.connect(lambda vid=vm_id: self._do_auto_snapshot(vid))
+        timer.start()
+        self._auto_snapshot_timers[vm_id] = timer
+
+    def _stop_auto_snapshot(self, vm_id: str) -> None:
+        timer = self._auto_snapshot_timers.pop(vm_id, None)
+        if timer:
+            timer.stop()
+
+    def _do_auto_snapshot(self, vm_id: str) -> None:
+        qmp = self._qmp_conns.get(vm_id)
+        if not qmp or not qmp.connected:
+            self._stop_auto_snapshot(vm_id)
+            return
+        from datetime import datetime
+        name = f"auto_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        try:
+            qmp.snapshot_create(name)
+            log.info("Auto-snapshot '%s' created for VM %s", name, vm_id)
+        except QMPError as exc:
+            log.warning("Auto-snapshot failed for %s: %s", vm_id, exc)
+        self._refresh_snapshots(vm_id)
 
     def _on_stop(self) -> None:
         cfg = self._current_vm
@@ -828,6 +862,7 @@ class MainWindow(QMainWindow):
         timer = self._instant_boot_pending.pop(cfg.vm_id, None)
         if timer:
             timer.stop()
+        self._stop_auto_snapshot(cfg.vm_id)
         self.vm_controls.set_buttons_for_state("stopped")
         self.vm_controls.snapshot_panel.set_snapshots([])
         self.vm_controls.snap_dag_panel.set_snapshots([])
@@ -871,6 +906,34 @@ class MainWindow(QMainWindow):
         except QMPError:
             pass
         self._update_qmp_status(cfg.vm_id)
+
+    def _on_boot_from_snapshot(self, snapshot_name: str) -> None:
+        cfg = self._current_vm
+        if not cfg:
+            return
+        proc = self._get_or_create_process(cfg)
+        if proc.state == ProcessState.RUNNING:
+            return
+        # Add -loadvm to extra_args temporarily for this boot
+        original_extra = list(cfg.extra_args)
+        cfg.extra_args = original_extra + ["-loadvm", snapshot_name]
+        proc.start()
+        cfg.extra_args = original_extra  # restore original
+        if proc.state != ProcessState.RUNNING:
+            stderr = proc.last_error
+            QMessageBox.critical(self, "Boot Failed",
+                                 f"Failed to boot from snapshot '{snapshot_name}'.\n\n{stderr}")
+            return
+        try:
+            qmp = QMPConnection(proc.socket_path)
+            qmp.connect()
+            self._qmp_conns[cfg.vm_id] = qmp
+            qmp.execute_cont()
+        except QMPError as exc:
+            log.error("QMP failed after boot-from-snapshot: %s", exc)
+        self._update_qmp_status(cfg.vm_id)
+        audit.record("vm_boot_from_snapshot", cfg.vm_id, cfg.name,
+                     {"snapshot_name": snapshot_name})
 
     def _on_snapshot_action(self, action: str, name: str) -> None:
         cfg = self._current_vm
@@ -1167,6 +1230,9 @@ class MainWindow(QMainWindow):
             return s
         _sc("Ctrl+N", self._on_create_vm)
         _sc("Ctrl+K", self._open_command_palette)
+        _sc("Ctrl+S", self._on_start)
+        _sc("Ctrl+Q", self._on_stop)
+        _sc("Ctrl+P", self._on_pause)
         _sc("F5", self._refresh_all)
         _sc("F11", self._toggle_fullscreen)
         _sc("Ctrl+F", self._focus_search)
@@ -1176,6 +1242,8 @@ class MainWindow(QMainWindow):
         _sc("Alt+M", self._toggle_reduced_motion)
         _sc("Ctrl+A", self._open_ai_assistant)
         _sc("Ctrl+Shift+/", self._show_shortcuts)
+        _sc("Ctrl+Shift+M", self._open_monitor_console)
+        _sc("Delete", self._on_delete_selected)
         for i in range(9):
             _sc(f"Ctrl+{i + 1}", lambda idx=i: self._switch_vm(idx))
 
@@ -1268,6 +1336,30 @@ class MainWindow(QMainWindow):
 
     def _show_shortcuts(self) -> None:
         ShortcutsDialog(self).exec()
+
+    def _on_delete_selected(self) -> None:
+        cfg = self._current_vm
+        if not cfg:
+            return
+        idx = next((i for i, c in enumerate(self.configs) if c.vm_id == cfg.vm_id), -1)
+        if idx >= 0:
+            reply = QMessageBox.question(
+                self, "Delete Machine",
+                f"Delete \"{cfg.name}\"?\nThis cannot be undone.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            if reply == QMessageBox.StandardButton.Yes:
+                self._on_sidebar_delete(idx)
+
+    def _open_monitor_console(self) -> None:
+        cfg = self._current_vm
+        if not cfg:
+            return
+        proc = self._processes.get(cfg.vm_id)
+        if not proc or proc.state != ProcessState.RUNNING:
+            return
+        from app.ui.monitor_console import MonitorConsoleDialog
+        dlg = MonitorConsoleDialog(proc.monitor_path, self)
+        dlg.exec()
 
     def _toggle_high_contrast(self) -> None:
         s = load_settings()
@@ -1465,6 +1557,16 @@ class MainWindow(QMainWindow):
                 self.vm_controls.balloon_panel.set_balloon_stats(cfg.ram_mb, actual_mb)
         except QMPError:
             self.vm_controls.perf_panel.add_ram_point(float(cfg.ram_mb) if cfg else 0)
+        # Live overview card updates
+        if cfg:
+            cpu_pct = self.vm_controls.perf_panel.last_cpu if hasattr(self.vm_controls.perf_panel, 'last_cpu') else 0
+            self.vm_controls.overview_tab.card_cpu.set_value(
+                str(cfg.cpu_cores), "vCPU" + ("s" if cfg.cpu_cores != 1 else ""),
+                f"Usage: {cpu_pct:.0f}%", secondary="KVM accelerated")
+            ram_used = self.vm_controls.perf_panel.last_ram if hasattr(self.vm_controls.perf_panel, 'last_ram') else 0
+            self.vm_controls.overview_tab.card_ram.set_value(
+                str(cfg.ram_mb), "MB",
+                f"Used: {ram_used:.0f} MB", secondary="DDR4 virtual memory")
 
     def _update_qmp_status(self, vm_id: str) -> None:
         qmp = self._qmp_conns.get(vm_id)

@@ -42,6 +42,10 @@ _SCHEMA = {
     "port_forwards": list,
     "usb_remembered_devices": list,
     "sandbox_mode": bool,
+    "auto_snapshot": bool,
+    "tags": list,
+    "notes": str,
+    "group": str,
 }
 
 
@@ -116,6 +120,10 @@ class VMConfig:
     port_forwards: list[int] = field(default_factory=list)
     usb_remembered_devices: list[dict] = field(default_factory=list)
     sandbox_mode: bool = False
+    auto_snapshot: bool = False
+    tags: list[str] = field(default_factory=list)
+    notes: str = ""
+    group: str = ""
 
     @property
     def vm_id(self) -> str:

@@ -270,6 +270,7 @@ class StatusBadge(QLabel):
 
 class OverviewTab(QWidget):
     create_requested = Signal()
+    clone_requested = Signal()
     fullscreen_requested = Signal()
 
     def __init__(self, parent=None) -> None:
@@ -316,6 +317,7 @@ class OverviewTab(QWidget):
         self.btn_start = QPushButton("\u25b6 START")
         self.btn_stop = QPushButton("\u25a0 STOP")
         self.btn_pause = QPushButton("\u23f8 PAUSE")
+        self.btn_clone = QPushButton("\u2398 CLONE")
 
         # Frosted glass base style shared by all buttons — pill shape
         _glass_base = (
@@ -343,18 +345,25 @@ class OverviewTab(QWidget):
             f" border: 1px solid rgba(244,123,31,0.30); {_glass_base} }}"
             f"QPushButton:hover {{ background-color: rgba(244,123,31,0.30);"
             f" border: 1px solid rgba(244,123,31,0.45); }}")
+        self.btn_clone.setStyleSheet(
+            f"QPushButton {{ background-color: rgba(148,226,213,0.15); color: #94e2d5;"
+            f" border: 1px solid rgba(148,226,213,0.30); {_glass_base} }}"
+            f"QPushButton:hover {{ background-color: rgba(148,226,213,0.28);"
+            f" border: 1px solid rgba(148,226,213,0.50); }}")
 
-        for btn in [self.btn_new, self.btn_start, self.btn_stop, self.btn_pause]:
+        for btn in [self.btn_new, self.btn_start, self.btn_stop, self.btn_pause, self.btn_clone]:
             btn.setFixedHeight(48)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self.btn_new.clicked.connect(self.create_requested.emit)
+        self.btn_clone.clicked.connect(self.clone_requested.emit)
 
         btn_row_layout.addWidget(self.btn_new)
         btn_row_layout.addWidget(self.btn_start)
         btn_row_layout.addWidget(self.btn_stop)
         btn_row_layout.addWidget(self.btn_pause)
+        btn_row_layout.addWidget(self.btn_clone)
 
         layout.addWidget(btn_row)
 
@@ -521,16 +530,35 @@ class VMEditDialog(QDialog):
         idx = next((i for i, (_, k) in enumerate(modes) if k == self.config.net_mode), 0)
         self._net.setCurrentIndex(idx)
 
+        self._tags = QLineEdit(", ".join(getattr(self.config, 'tags', []) or []))
+        self._tags.setPlaceholderText("e.g. development, linux, testing")
+        self._tags.setStyleSheet(INPUT_STYLE)
+
+        from PySide6.QtWidgets import QTextEdit as _QTextEdit
+        self._notes = _QTextEdit()
+        self._notes.setPlainText(getattr(self.config, 'notes', '') or '')
+        self._notes.setMaximumHeight(60)
+        self._notes.setStyleSheet(
+            f"QTextEdit {{ {INPUT_STYLE.split('{')[1].split('}')[0]} }}")
+
+        from PySide6.QtWidgets import QCheckBox
+        self._auto_snap = QCheckBox("Auto-snapshot every 30 minutes")
+        self._auto_snap.setChecked(getattr(self.config, 'auto_snapshot', False))
+        self._auto_snap.setStyleSheet(
+            f"QCheckBox {{ color: {TEXT_PRIMARY}; font-size: 12px; background: transparent; }}")
+
         for lbl_text, widget in [
             ("Name", self._name), ("RAM", self._ram), ("CPU Cores", self._cpu),
             ("ISO Path", self._iso), ("Disk Path", self._disk),
             ("QEMU Binary", self._qemu), ("Network", self._net),
+            ("Tags", self._tags), ("Notes", self._notes),
         ]:
             lbl = QLabel(lbl_text)
             lbl.setStyleSheet(LABEL_STYLE)
             form.addRow(lbl, widget)
 
         layout.addLayout(form)
+        layout.addWidget(self._auto_snap)
 
         info = QLabel("RAM and CPU changes take effect on next VM start.")
         info.setStyleSheet(
@@ -568,6 +596,9 @@ class VMEditDialog(QDialog):
         self.config.disk_path = self._disk.text().strip()
         self.config.qemu_binary = self._qemu.text().strip()
         self.config.net_mode = self._net.currentData()
+        self.config.tags = [t.strip() for t in self._tags.text().split(",") if t.strip()]
+        self.config.notes = self._notes.toPlainText().strip()
+        self.config.auto_snapshot = self._auto_snap.isChecked()
         self.accepted_changes = True
         self.accept()
 
