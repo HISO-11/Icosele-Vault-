@@ -166,13 +166,20 @@ class MainWindow(QMainWindow):
         glass = self._is_glass_platform()
         # On glass platforms use semi-transparent backgrounds
         if glass:
-            main_bg = "background: rgba(15,15,25,0.7)"
-            panel_bg = "rgba(255,255,255,0.05)"
+            main_bg = "background: rgba(30,30,30,0.88)"
+            panel_bg = "rgba(30,30,30,0.85)"
         else:
             main_bg = ("background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
                         " stop:0 #0d0d1a, stop:1 #0a0a14)")
             panel_bg = None  # keep existing theme colours
 
+        glass_extra = ""
+        if glass:
+            glass_extra = (
+                f" QMainWindow {{ background: transparent; }}"
+                f" #centralWidget {{ background: rgba(30,30,30,0.88); }}"
+                f" #sidebar {{ background: rgba(24,24,24,0.90); }}"
+            )
         self.setStyleSheet(
             f"* {{ font-family: {FONT_FAMILY}; }}"
             f" QMainWindow {{ {main_bg}; color: {TEXT_PRIMARY}; }}"
@@ -187,9 +194,11 @@ class MainWindow(QMainWindow):
             f" QScrollBar::handle:horizontal {{ background: #546058; border-radius: 2px; }}"
             f" QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}"
             + (f" QGroupBox, #SidebarPanel, #StatCard {{ background: {panel_bg}; }}"
-               if panel_bg else ""))
+               if panel_bg else "")
+            + glass_extra)
 
         central = QWidget()
+        central.setObjectName("centralWidget")
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
@@ -212,6 +221,7 @@ class MainWindow(QMainWindow):
         content.setSpacing(0)
 
         self.vm_list = VMListPanel(self.configs)
+        self.vm_list.setObjectName("sidebar")
         self.vm_controls = VMControlPanel()
         self.topology_panel = TopologyPanel(
             self.configs, self._processes, self._qmp_conns)

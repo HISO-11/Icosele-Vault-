@@ -108,7 +108,14 @@ class AIAssistantPanel(QFrame):
         self._input.returnPressed.connect(self._on_send)
         inp_row.addWidget(self._input, 1)
         self._btn_send = QPushButton("Send")
-        self._btn_send.setStyleSheet(save_btn_style())
+        self._btn_send.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #F47B1F; color: {TEXT_ON_ACCENT};
+                border: none; border-radius: 6px; padding: 8px 20px;
+                font-size: 12px; font-weight: 600; font-family: {FONT_FAMILY};
+            }}
+            QPushButton:hover {{ background-color: #FF922B; }}
+        """)
         self._btn_send.setFixedHeight(34)
         self._btn_send.setCursor(Qt.CursorShape.PointingHandCursor)
         self._btn_send.clicked.connect(self._on_send)

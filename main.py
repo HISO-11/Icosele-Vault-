@@ -119,7 +119,7 @@ def main() -> None:
             ApplyMica(
                 hwnd=hwnd,
                 Theme=MicaTheme.DARK,
-                Style=MicaStyle.DEFAULT,
+                Style=MicaStyle.MICA_ALT,
             )
             window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
             log.info("[Mica] Windows Mica applied successfully")
