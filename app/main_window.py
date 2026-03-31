@@ -177,7 +177,7 @@ class MainWindow(QMainWindow):
             f"* {{ font-family: {FONT_FAMILY}; }}"
             f" QMainWindow {{ {main_bg}; color: {TEXT_PRIMARY}; }}"
             f" QFrame {{ background: transparent; border: none; }}"
-            f" #accentBar {{ background-color: #1FB8F4; border: none; }}"
+            f" #accentBar {{ background-color: #4caf7d; border: none; }}"
             f" QLabel {{ color: {TEXT_PRIMARY}; background: transparent; }}"
             f" QLineEdit {{ color: {TEXT_PRIMARY}; }}"
             f" QScrollBar:vertical {{ width: 4px; background: transparent; border: none; }}"
