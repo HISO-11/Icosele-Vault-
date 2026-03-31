@@ -101,3 +101,5 @@
 {"timestamp": "2026-03-29T12:14:19.456990+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131419"}}
 {"timestamp": "2026-03-29T12:17:35.475667+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131735"}}
 {"timestamp": "2026-03-29T12:17:37.456396+00:00", "action": "vm_crashed", "vm_id": "windows-vm", "vm_name": "windows vm", "user": "jl", "details": {"exit_code": -9, "timestamp": "20260329_131737"}}
+{"timestamp": "2026-03-30T17:37:17.190742+00:00", "action": "vm_created", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-30T17:37:19.143784+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}

@@ -1,13 +1,18 @@
 """Task 3 — Team VM Library for sharing templates across LAN."""
 from __future__ import annotations
 
-import fcntl
 import json
 import logging
 import os
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+if sys.platform != "win32":
+    import fcntl
+else:
+    import msvcrt
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -46,9 +51,15 @@ def _load_index(lib_path: str) -> list[dict]:
         return []
     try:
         with open(idx_file, "r") as f:
-            fcntl.flock(f, fcntl.LOCK_SH)
+            if sys.platform != "win32":
+                fcntl.flock(f, fcntl.LOCK_SH)
+            else:
+                msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
             data = json.load(f)
-            fcntl.flock(f, fcntl.LOCK_UN)
+            if sys.platform != "win32":
+                fcntl.flock(f, fcntl.LOCK_UN)
+            else:
+                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
             return data if isinstance(data, list) else []
     except (json.JSONDecodeError, OSError):
         return []
@@ -58,9 +69,15 @@ def _save_index(lib_path: str, entries: list[dict]) -> None:
     idx_file = Path(lib_path) / "library_index.json"
     Path(lib_path).mkdir(parents=True, exist_ok=True)
     with open(idx_file, "w") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
+        if sys.platform != "win32":
+            fcntl.flock(f, fcntl.LOCK_EX)
+        else:
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
         json.dump(entries, f, indent=2)
-        fcntl.flock(f, fcntl.LOCK_UN)
+        if sys.platform != "win32":
+            fcntl.flock(f, fcntl.LOCK_UN)
+        else:
+            msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 class _TemplateCard(QFrame):
