@@ -618,12 +618,6 @@ class VMControlPanel(QFrame):
 
         outer.addSpacing(10)
 
-        divider = QFrame()
-        divider.setFrameShape(QFrame.Shape.HLine)
-        divider.setFixedHeight(1)
-        divider.setStyleSheet("background-color: rgba(255,255,255,0.06); border: none;")
-        outer.addWidget(divider)
-
         # ── Main 5 tabs: Overview | Console | Snapshots | AI Assistant | cog ──
         # 32px gap between tabs achieved via generous padding
         self.tabs = QTabWidget()
@@ -631,22 +625,24 @@ class VMControlPanel(QFrame):
         self.tabs.setStyleSheet(f"""
             QTabWidget {{ border: none; background: transparent; }}
             QTabWidget::pane {{
-                border: none; border-top: 1px solid rgba(255,255,255,0.06);
-                margin: 0; padding: 0; background: transparent;
+                border: none; margin: 0; padding: 0; background: #1e1e1e;
             }}
             QTabBar {{ border: none; background: transparent; }}
             QTabBar::tab {{
-                background: transparent; color: #585b70;
+                background: transparent; color: #888888;
                 border: none; border-bottom: 2px solid transparent;
-                padding: 14px 32px; font-size: 13px; font-weight: 500;
+                padding: 8px 16px; font-size: 13px; font-weight: 500;
                 font-family: {FONT_FAMILY}; margin: 0;
             }}
             QTabBar::tab:selected {{
-                color: {TEXT_PRIMARY}; font-weight: 600;
-                border-bottom: 2px solid #F47B1F;
+                background: transparent;
+                color: #ffffff; font-weight: 600;
+                border: none; border-bottom: 2px solid #F47B1F;
             }}
-            QTabBar::tab:hover:!selected {{
-                color: #7f849c;
+            QTabBar::tab:hover {{
+                background: transparent;
+                border: none; border-bottom: 2px solid rgba(244,123,31,0.3);
+                color: #cccccc;
             }}
         """)
 

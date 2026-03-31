@@ -164,20 +164,20 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1200, 700)
 
         glass = self._is_glass_platform()
-        # On glass platforms use semi-transparent backgrounds
+        # On glass platforms use semi-transparent backgrounds;
+        # on Linux use solid #1e1e1e with no transparency.
         if glass:
             main_bg = "background: rgba(30,30,30,0.88)"
             panel_bg = "rgba(30,30,30,0.85)"
         else:
-            main_bg = ("background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-                        " stop:0 #0d0d1a, stop:1 #0a0a14)")
+            main_bg = "background: #1e1e1e"
             panel_bg = None  # keep existing theme colours
 
         glass_extra = ""
         if glass:
             glass_extra = (
                 f" QMainWindow {{ background: transparent; }}"
-                f" #centralWidget {{ background: rgba(30,30,30,0.88); }}"
+                f" #centralWidget {{ background: rgba(28,28,28,0.85); }}"
                 f" #sidebar {{ background: rgba(24,24,24,0.90); }}"
             )
         self.setStyleSheet(
@@ -203,8 +203,6 @@ class MainWindow(QMainWindow):
         root = QVBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-
-        root.addWidget(GradientStrip())
 
         # CVE warning banner (hidden by default)
         self._cve_banner = QLabel("")

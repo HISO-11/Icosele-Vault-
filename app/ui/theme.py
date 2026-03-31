@@ -3,11 +3,11 @@
 FONT_FAMILY = '"Inter", "SF Pro Display", "Segoe UI", sans-serif'
 
 # -- Palette --
-BG_DEEP = "#1c1f1e"
-BG_PANEL = "#222625"
-BG_CARD = "#282d2b"
-BG_ELEVATED = "#2e3432"
-BORDER = "#3a4240"
+BG_DEEP = "#1a1a1a"
+BG_PANEL = "#1e1e1e"
+BG_CARD = "#262626"
+BG_ELEVATED = "#2e2e2e"
+BORDER = "#383838"
 BORDER_ACTIVE = "#4caf7d"
 
 ACCENT = "#4caf7d"
@@ -70,21 +70,25 @@ QLineEdit:focus, QSpinBox:focus {{ border-color: {ACCENT}; }}
 """
 
 TAB_STYLE = f"""
-QTabWidget {{ border: none; border-top: none; margin-top: 0px; }}
-QTabWidget::pane {{ border: none; border-top: none; margin-top: 0px; background-color: {BG_PANEL}; }}
-QTabBar {{ background: transparent; border: none; border-top: none; margin-top: 0px; }}
+QTabWidget {{ border: none; margin-top: 0px; }}
+QTabWidget::pane {{ border: none; margin-top: 0px; background: #1e1e1e; }}
+QTabBar {{ background: transparent; border: none; margin-top: 0px; }}
 QTabBar::tab {{
-    background-color: transparent; color: {TEXT_SECONDARY};
-    border: none; border-top: none; border-bottom: 2px solid transparent;
-    padding: 16px 24px; font-size: 13px; font-weight: 500;
+    background: transparent; color: #888888;
+    border: none; border-bottom: 2px solid transparent;
+    padding: 8px 16px; font-size: 13px; font-weight: 500;
     font-family: {FONT_FAMILY}; margin: 0 2px; margin-top: 0px;
 }}
 QTabBar::tab:selected {{
-    color: {TEXT_PRIMARY}; font-size: 14px; font-weight: 600;
-    border: none; border-top: none;
-    border-bottom: 2px solid {ACCENT};
+    background: transparent;
+    color: #ffffff; font-weight: 600;
+    border: none; border-bottom: 2px solid #F47B1F;
 }}
-QTabBar::tab:hover:!selected {{ color: {ACCENT_LIGHT}; }}
+QTabBar::tab:hover {{
+    background: transparent;
+    border: none; border-bottom: 2px solid rgba(244,123,31,0.3);
+    color: #cccccc;
+}}
 """
 
 TREE_STYLE = f"""

@@ -124,9 +124,8 @@ class VMListPanel(QFrame):
     def _build_ui(self) -> None:
         self.setFixedWidth(200)
         self.setStyleSheet(
-            "background-color: rgba(255,255,255,0.02);"
-            " border: none;"
-            " border-right: 1px solid rgba(255,255,255,0.06);")
+            "background-color: #1a1a1a;"
+            " border: none;")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 14)

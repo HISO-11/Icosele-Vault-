@@ -469,7 +469,7 @@ class SnapshotDAGPanel(QFrame):
         self._sub_tabs.setDocumentMode(True)
         self._sub_tabs.setStyleSheet(f"""
             QTabWidget {{ border: none; }}
-            QTabWidget::pane {{ border: none; background: {BG_PANEL}; }}
+            QTabWidget::pane {{ border: none; background: #1e1e1e; }}
             QTabBar {{ background: transparent; border: none; }}
             QTabBar::tab {{
                 background: transparent; color: #6c7086;

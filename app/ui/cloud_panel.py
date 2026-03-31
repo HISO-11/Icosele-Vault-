@@ -616,7 +616,7 @@ class CloudPanel(QFrame):
         tabs.setDocumentMode(True)
         tabs.setStyleSheet(f"""
             QTabWidget {{ border: none; }}
-            QTabWidget::pane {{ border: none; background: {BG_PANEL}; }}
+            QTabWidget::pane {{ border: none; background: #1e1e1e; }}
             QTabBar {{ background: transparent; border: none; }}
             QTabBar::tab {{
                 background: transparent; color: {TEXT_SECONDARY};
