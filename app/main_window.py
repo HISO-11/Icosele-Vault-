@@ -48,18 +48,11 @@ from app.ui.theme import (
 )
 
 
-class GradientStrip(QWidget):
+class AccentBar(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setFixedHeight(4)
-
-    def paintEvent(self, event) -> None:
-        p = QPainter(self)
-        g = QLinearGradient(0, 0, self.width(), 0)
-        g.setColorAt(0.0, QColor("#4caf7d"))
-        g.setColorAt(1.0, QColor("#357a55"))
-        p.fillRect(self.rect(), g)
-        p.end()
+        self.setFixedHeight(3)
+        self.setStyleSheet("background-color: #1FB8F4;")
 
 
 class MainWindow(QMainWindow):
@@ -203,6 +196,8 @@ class MainWindow(QMainWindow):
         root = QVBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
+
+        root.addWidget(AccentBar())
 
         # CVE warning banner (hidden by default)
         self._cve_banner = QLabel("")
