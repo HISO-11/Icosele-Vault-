@@ -9,8 +9,8 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QKeySequence, QLinearGradient, QPainter, QPixmap, QShortcut
 from PySide6.QtWidgets import (
-    QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
-    QStackedWidget, QVBoxLayout, QWidget,
+    QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+    QMessageBox, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from app.ui.instant_boot_panel import INSTANT_BOOT_TAG
