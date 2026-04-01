@@ -2,7 +2,7 @@
   "name": "test-vm",
   "ram_mb": 2048,
   "cpu_cores": 2,
-  "disk_path": "",
+  "disk_path": "/home/jl/.icosele-vm/vms/test-vm/test-vm.qcow2",
   "iso_path": "",
   "qemu_binary": "/usr/bin/qemu-system-x86_64",
   "extra_args": [],
@@ -41,5 +41,12 @@
   "devcontainer_config": {},
   "port_forwards": [],
   "usb_remembered_devices": [],
-  "sandbox_mode": false
+  "sandbox_mode": false,
+  "auto_snapshot": false,
+  "tags": [],
+  "notes": "",
+  "group": "",
+  "port_forward_rules": [],
+  "cpu_pinning": [],
+  "isolation_level": "standard"
 }
