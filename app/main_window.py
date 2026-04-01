@@ -264,6 +264,8 @@ class MainWindow(QMainWindow):
         self.vm_list.ai_create_requested.connect(self._on_ai_create_vm)
         self.vm_controls.overview_tab.create_requested.connect(self._on_create_vm)
         self.vm_controls.overview_tab.clone_requested.connect(self._on_clone_vm)
+        self.vm_controls.overview_tab.import_requested.connect(self._on_toolbar_import)
+        self.vm_controls.overview_tab.export_requested.connect(self._on_toolbar_export)
         self.vm_controls.overview_tab.fullscreen_requested.connect(self._toggle_fullscreen)
         self.vm_list.clone_requested.connect(self._on_sidebar_clone)
         self.vm_list.vm_rename_requested.connect(self._on_sidebar_rename)
@@ -452,6 +454,40 @@ class MainWindow(QMainWindow):
             self.vm_controls.perf_panel.clear()
             self.vm_controls.instant_boot_panel.set_snapshot_info(
                 cfg.vm_id in self._instant_boot_saved)
+
+    def _on_toolbar_import(self) -> None:
+        from app.ui.vm_list import import_vm
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Import VM", str(Path.home()),
+            "Icosele VM Archive (*.ivault);;Zip Files (*.zip);;All Files (*)")
+        if not path:
+            return
+        try:
+            cfg = import_vm(path)
+            cfg.save()
+            self.vm_list.add_vm(cfg)
+            QMessageBox.information(self, "Import Complete",
+                                    f"VM \"{cfg.name}\" imported successfully.")
+        except Exception as exc:
+            QMessageBox.warning(self, "Import Failed", str(exc))
+
+    def _on_toolbar_export(self) -> None:
+        from app.ui.vm_list import export_vm
+        cfg = self._current_vm
+        if not cfg:
+            return
+        default_name = f"{cfg.vm_id}.ivault"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Export VM", str(Path.home() / default_name),
+            "Icosele VM Archive (*.ivault);;All Files (*)")
+        if not path:
+            return
+        try:
+            export_vm(cfg, path)
+            QMessageBox.information(self, "Export Complete",
+                                    f"VM exported to:\n{path}")
+        except Exception as exc:
+            QMessageBox.warning(self, "Export Failed", str(exc))
 
     def _on_create_vm(self) -> None:
         dialog = VMCreateDialog(self)

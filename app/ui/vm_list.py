@@ -190,7 +190,7 @@ class VMListPanel(QFrame):
         machine_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         machine_label.setStyleSheet(
             f"font-size: 8px; font-weight: 500;"
-            f" color: {TEXT_SECONDARY}; letter-spacing: 6px;"
+            f" color: {TEXT_SECONDARY}; letter-spacing: 2px;"
             f" background: transparent;")
         logo_layout.addWidget(nova_label)
         logo_layout.addWidget(machine_label)
@@ -278,43 +278,6 @@ class VMListPanel(QFrame):
 
         layout.addWidget(self.list_widget)
         layout.addStretch()
-
-        # Import/Export buttons
-        ie_row = QHBoxLayout()
-        ie_row.setContentsMargins(14, 0, 14, 0)
-        ie_row.setSpacing(6)
-        self._btn_import = QPushButton("Import")
-        self._btn_import.setFixedHeight(28)
-        self._btn_import.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._btn_import.setStyleSheet(
-            f"QPushButton {{ background: transparent; color: {TEXT_SECONDARY};"
-            f" border: 1px solid {BORDER}; border-radius: 4px;"
-            f" font-size: 11px; padding: 4px 10px; }}"
-            f"QPushButton:hover {{ color: {TEXT_PRIMARY}; border-color: {TEXT_SECONDARY}; }}")
-        self._btn_import.clicked.connect(self._on_import)
-        self._btn_export = QPushButton("Export")
-        self._btn_export.setFixedHeight(28)
-        self._btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._btn_export.setStyleSheet(
-            f"QPushButton {{ background: transparent; color: {TEXT_SECONDARY};"
-            f" border: 1px solid {BORDER}; border-radius: 4px;"
-            f" font-size: 11px; padding: 4px 10px; }}"
-            f"QPushButton:hover {{ color: {TEXT_PRIMARY}; border-color: {TEXT_SECONDARY}; }}")
-        self._btn_export.clicked.connect(self._on_export)
-        self._btn_remote = QPushButton("Remote")
-        self._btn_remote.setFixedHeight(28)
-        self._btn_remote.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._btn_remote.setStyleSheet(
-            f"QPushButton {{ background: transparent; color: {TEXT_SECONDARY};"
-            f" border: 1px solid {BORDER}; border-radius: 4px;"
-            f" font-size: 11px; padding: 4px 10px; }}"
-            f"QPushButton:hover {{ color: {TEXT_PRIMARY}; border-color: {TEXT_SECONDARY}; }}")
-        self._btn_remote.clicked.connect(self._on_remote)
-        ie_row.addWidget(self._btn_import)
-        ie_row.addWidget(self._btn_export)
-        ie_row.addWidget(self._btn_remote)
-        ie_row.addStretch()
-        layout.addLayout(ie_row)
 
     def eventFilter(self, obj, event) -> bool:
         if obj is self.list_widget.viewport():

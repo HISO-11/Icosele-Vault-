@@ -274,6 +274,8 @@ class StatusBadge(QLabel):
 class OverviewTab(QWidget):
     create_requested = Signal()
     clone_requested = Signal()
+    import_requested = Signal()
+    export_requested = Signal()
     fullscreen_requested = Signal()
 
     def __init__(self, parent=None) -> None:
@@ -321,6 +323,8 @@ class OverviewTab(QWidget):
         self.btn_stop = QPushButton("\u25a0 STOP")
         self.btn_pause = QPushButton("\u23f8 PAUSE")
         self.btn_clone = QPushButton("\u2398 CLONE")
+        self.btn_import = QPushButton("\u2b07 IMPORT")
+        self.btn_export = QPushButton("\u2b06 EXPORT")
 
         # Frosted glass base style shared by all buttons — pill shape
         _glass_base = (
@@ -349,24 +353,36 @@ class OverviewTab(QWidget):
             f"QPushButton:hover {{ background-color: rgba(244,123,31,0.30);"
             f" border: 1px solid rgba(244,123,31,0.45); }}")
         self.btn_clone.setStyleSheet(
-            f"QPushButton {{ background-color: rgba(148,226,213,0.15); color: #94e2d5;"
-            f" border: 1px solid rgba(148,226,213,0.30); {_glass_base} }}"
-            f"QPushButton:hover {{ background-color: rgba(148,226,213,0.28);"
-            f" border: 1px solid rgba(148,226,213,0.50); }}")
+            f"QPushButton {{ background-color: rgba(31,184,244,0.15); color: #1FB8F4;"
+            f" border: 1px solid rgba(31,184,244,0.30); {_glass_base} }}"
+            f"QPushButton:hover {{ background-color: rgba(31,184,244,0.28);"
+            f" border: 1px solid rgba(31,184,244,0.50); }}")
+        _util_style = (
+            f"QPushButton {{ background-color: rgba(108,112,134,0.15); color: #a6adc8;"
+            f" border: 1px solid rgba(108,112,134,0.30); {_glass_base} }}"
+            f"QPushButton:hover {{ background-color: rgba(108,112,134,0.28);"
+            f" border: 1px solid rgba(108,112,134,0.50); }}")
+        self.btn_import.setStyleSheet(_util_style)
+        self.btn_export.setStyleSheet(_util_style)
 
-        for btn in [self.btn_new, self.btn_start, self.btn_stop, self.btn_pause, self.btn_clone]:
+        for btn in [self.btn_new, self.btn_start, self.btn_stop, self.btn_pause,
+                     self.btn_clone, self.btn_import, self.btn_export]:
             btn.setFixedHeight(48)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self.btn_new.clicked.connect(self.create_requested.emit)
         self.btn_clone.clicked.connect(self.clone_requested.emit)
+        self.btn_import.clicked.connect(self.import_requested.emit)
+        self.btn_export.clicked.connect(self.export_requested.emit)
 
         btn_row_layout.addWidget(self.btn_new)
         btn_row_layout.addWidget(self.btn_start)
         btn_row_layout.addWidget(self.btn_stop)
         btn_row_layout.addWidget(self.btn_pause)
         btn_row_layout.addWidget(self.btn_clone)
+        btn_row_layout.addWidget(self.btn_import)
+        btn_row_layout.addWidget(self.btn_export)
 
         layout.addWidget(btn_row)
 

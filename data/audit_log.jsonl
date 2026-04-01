@@ -112,3 +112,5 @@
 {"timestamp": "2026-03-31T17:13:57.431476+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
 {"timestamp": "2026-03-31T17:14:52.694435+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
 {"timestamp": "2026-03-31T17:14:56.410162+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-31T17:30:42.339041+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
+{"timestamp": "2026-03-31T17:32:50.625070+00:00", "action": "vm_started", "vm_id": "ubuntu", "vm_name": "ubuntu", "user": "jl", "details": {}}
