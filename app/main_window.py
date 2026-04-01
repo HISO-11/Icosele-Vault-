@@ -264,8 +264,6 @@ class MainWindow(QMainWindow):
         self.vm_list.ai_create_requested.connect(self._on_ai_create_vm)
         self.vm_controls.overview_tab.create_requested.connect(self._on_create_vm)
         self.vm_controls.overview_tab.clone_requested.connect(self._on_clone_vm)
-        self.vm_controls.overview_tab.import_requested.connect(self._on_toolbar_import)
-        self.vm_controls.overview_tab.export_requested.connect(self._on_toolbar_export)
         self.vm_controls.overview_tab.fullscreen_requested.connect(self._toggle_fullscreen)
         self.vm_list.clone_requested.connect(self._on_sidebar_clone)
         self.vm_list.vm_rename_requested.connect(self._on_sidebar_rename)

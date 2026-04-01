@@ -279,6 +279,36 @@ class VMListPanel(QFrame):
         layout.addWidget(self.list_widget)
         layout.addStretch()
 
+        # Import/Export buttons at sidebar bottom
+        _ie_btn = (
+            "QPushButton {"
+            " background: rgba(255,255,255,0.06);"
+            " border: 1px solid rgba(255,255,255,0.10);"
+            " border-radius: 6px;"
+            " color: #ffffff;"
+            " font-size: 11px;"
+            " padding: 6px 12px;"
+            "}"
+            "QPushButton:hover {"
+            " background: rgba(255,255,255,0.12);"
+            " border: 1px solid rgba(255,255,255,0.18);"
+            "}"
+        )
+        ie_row = QHBoxLayout()
+        ie_row.setContentsMargins(10, 4, 10, 0)
+        ie_row.setSpacing(6)
+        self._btn_import = QPushButton("Import")
+        self._btn_import.setStyleSheet(_ie_btn)
+        self._btn_import.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_import.clicked.connect(self._on_import)
+        self._btn_export = QPushButton("Export")
+        self._btn_export.setStyleSheet(_ie_btn)
+        self._btn_export.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._btn_export.clicked.connect(self._on_export)
+        ie_row.addWidget(self._btn_import, 1)
+        ie_row.addWidget(self._btn_export, 1)
+        layout.addLayout(ie_row)
+
     def eventFilter(self, obj, event) -> bool:
         if obj is self.list_widget.viewport():
             if event.type() == QEvent.Type.MouseMove:
